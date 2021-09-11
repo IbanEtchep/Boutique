@@ -1,0 +1,52 @@
+#Azuriom database
+database:
+  host: host
+  port: port
+  dbname: name
+  user: user
+  password: password
+
+#Discount in percentage applied to whole shop.
+whole-shop-promo: 0
+
+placeholders:
+  # %price_display% placeholder's format (you can use %price% placeholder)
+  price-display: "%price% tokens"
+  # %promo_price_display% placeholder's format (you can use %price%, %old_price% and %discount_percent% placeholders)
+  # %price_display% is replaced by this placeholder when item is discounted
+  promo-price-display: "&m%old_price% &f%price% tokens (-%discount_percent%%)"
+
+categories:
+  #category ID (must be unique)
+  '1':
+    #Discount applied to whole category
+    discount: 0
+    menuitem:
+      ==: menuitem
+      name: "&cname"
+      page: 0
+      slot: 0
+      item:
+        ==: org.bukkit.inventory.ItemStack
+        v: 2730
+        type: WHEAT
+      lore:
+        - &aline1
+        - &bline2
+    items:
+      #shop item id (unique)
+      '11':
+        price: 10
+        discount: 0
+        buycommands:
+          - "spawn %player%"
+        display:
+          ==: menuitem
+          item:
+            ==: org.bukkit.inventory.ItemStack
+            v: 2730
+            type: WHEAT
+          name: &cname
+          lore:
+            - &aline1
+            - &bline2

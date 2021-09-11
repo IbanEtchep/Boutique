@@ -1,0 +1,11 @@
+name: Boutique
+version: ${project.version}
+main: fr.iban.boutique.BoutiquePlugin
+api-version: 1.17
+prefix: Boutique
+authors: [ Iban ]
+description: Plugin de boutique
+depend: [MenuAPI]
+
+commands:
+  boutique:
