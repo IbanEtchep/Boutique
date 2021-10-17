@@ -1,4 +1,4 @@
-package fr.iban.boutique.objects;
+package fr.iban.boutique;
 
 import java.util.List;
 
@@ -11,9 +11,11 @@ public class ShopItem {
 	private int discount;
 	private ConfigurableItem display;
 	private List<String> buyCommands;
+	private ShopCategory category;
 	
-	public ShopItem(int id) {
+	public ShopItem(int id, ShopCategory category) {
 		this.id = id;
+		this.category = category;
 	}
 	
 	public int getId() {
@@ -50,5 +52,18 @@ public class ShopItem {
 	
 	public void setBuyCommands(List<String> buyCommands) {
 		this.buyCommands = buyCommands;
+	}
+
+	public void setCategory(ShopCategory category) {
+		this.category = category;
+	}
+
+	public ShopCategory getCategory() {
+		return category;
+	}
+
+	public double getPriceModifier() {
+		int wholeShopDiscount = ShopPlugin.getInstance().getConfig().getInt("whole-shop-discount");
+		return 1.0-((wholeShopDiscount + getCategory().getDiscount() + getDiscount())/100.0);
 	}
 }

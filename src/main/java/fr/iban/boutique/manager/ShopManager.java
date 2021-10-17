@@ -1,4 +1,4 @@
-package fr.iban.boutique;
+package fr.iban.boutique.manager;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -6,20 +6,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+import fr.iban.boutique.ShopCategory;
+import fr.iban.boutique.ShopItem;
+import fr.iban.boutique.ShopPlugin;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import fr.iban.boutique.objects.ShopCategory;
-import fr.iban.boutique.objects.ShopItem;
 import fr.iban.menuapi.ConfigurableItem;
 
 public class ShopManager {
 	
-	private BoutiquePlugin plugin;
+	private ShopPlugin plugin;
 	private FileConfiguration config;
 	private Map<Integer, ShopCategory> categories = new HashMap<>();
 
-	public ShopManager(BoutiquePlugin plugin) {
+	public ShopManager(ShopPlugin plugin) {
 		this.plugin = plugin;
 		config = plugin.getConfig();
 		loadShops();
@@ -37,11 +38,12 @@ public class ShopManager {
 			if(section != null) {
 				for(String itemID : config.getConfigurationSection(catPath+".items").getKeys(false)) {
 					String itemPath = catPath+".items."+itemID;
-					ShopItem shopitem = new ShopItem(Integer.parseInt(itemID));
+					ShopItem shopitem = new ShopItem(Integer.parseInt(itemID), category);
 					shopitem.setDiscount(config.getInt(itemPath+".discount"));
 					shopitem.setPrice(config.getInt(itemPath+".price"));
 					shopitem.setBuyCommands(config.getStringList(itemPath+".buycommands"));
 					shopitem.setDisplay((ConfigurableItem) config.get(itemPath+".menuitem"));
+					shopitem.setCategory(category);
 					category.getShopitems().put(shopitem.getId(), shopitem);
 				}
 			}
@@ -82,14 +84,14 @@ public class ShopManager {
 
 
 	public void addShopItem(ShopCategory category, ConfigurableItem display) {
-		ShopItem item = new ShopItem(generateID(category.getShopitems().keySet()));
+		ShopItem item = new ShopItem(generateID(category.getShopitems().keySet()), category);
 		item.setDisplay(display);
 		category.getShopitems().put(item.getId(), item);
 		saveShopItem(item, category);
 	}
 
     public void addShopItem(ShopCategory category, String name) {
-    	ShopItem item = new ShopItem(generateID(category.getShopitems().keySet()));
+    	ShopItem item = new ShopItem(generateID(category.getShopitems().keySet()), category);
 		ConfigurableItem display = new ConfigurableItem();
 		display.setName(name);
 		item.setDisplay(display);
@@ -114,6 +116,10 @@ public class ShopManager {
     
     public Map<Integer, ShopCategory> getCategories() {
 		return categories;
+	}
+
+	public String getCurrencyName(){
+		return plugin.getConfig().getString("messages.currency-name");
 	}
     
     public int generateID(Collection<Integer> collection) {

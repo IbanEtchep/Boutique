@@ -1,6 +1,9 @@
 package fr.iban.boutique.sql;
 
+import fr.iban.boutique.ShopItem;
 import org.bukkit.entity.Player;
+
+import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractStorage {
 
@@ -12,4 +15,5 @@ public abstract class AbstractStorage {
 
     public abstract void removeTokens(Player player, int amount);
 
+    public abstract void addPurchaseHistory(Player player, ShopItem item);
 }

@@ -4,26 +4,25 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import fr.iban.boutique.BoutiquePlugin;
+import fr.iban.boutique.ShopPlugin;
 import fr.iban.menuapi.MenuAPI;
 import fr.iban.menuapi.utils.ItemBuilder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import fr.iban.boutique.ShopManager;
-import fr.iban.boutique.objects.ShopCategory;
+import fr.iban.boutique.manager.ShopManager;
+import fr.iban.boutique.ShopCategory;
 import fr.iban.menuapi.MenuItem;
 import fr.iban.menuapi.menu.ConfigurableMenu;
 import fr.iban.menuapi.ConfigurableItem;
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.inventory.ItemStack;
 
 public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 
-	private final BoutiquePlugin plugin;
+	private final ShopPlugin plugin;
 	private ShopManager manager;
 
-	public ShopCategoryListMenu(Player player, BoutiquePlugin plugin) {
+	public ShopCategoryListMenu(Player player, ShopPlugin plugin) {
 		super(player);
 		this.manager = plugin.getShopManager();
 		this.plugin = plugin;
@@ -81,6 +80,6 @@ public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 	}
 
 	private CompletableFuture<MenuItem> getTokensItem(){
-		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getSqlStorage().getTokens(player)).build()));
+		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getDatabaseManager().getTokens(player)).build()));
 	}
 }

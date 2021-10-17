@@ -4,17 +4,17 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import fr.iban.boutique.BoutiquePlugin;
-import fr.iban.boutique.objects.ShopCategory;
+import fr.iban.boutique.ShopPlugin;
+import fr.iban.boutique.ShopCategory;
 import fr.iban.menuapi.MenuAPI;
 import fr.iban.menuapi.menu.ConfirmMenu;
 import fr.iban.menuapi.utils.ItemBuilder;
-import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import fr.iban.boutique.ShopManager;
-import fr.iban.boutique.objects.ShopItem;
+import fr.iban.boutique.manager.ShopManager;
+import fr.iban.boutique.ShopItem;
 import fr.iban.menuapi.MenuItem;
 import fr.iban.menuapi.menu.ConfigurableMenu;
 import fr.iban.menuapi.ConfigurableItem;
@@ -22,11 +22,11 @@ import fr.iban.menuapi.utils.HexColor;
 
 public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 
-	private final BoutiquePlugin plugin;
+	private final ShopPlugin plugin;
 	private ShopCategory category;
 	private ShopManager manager;
 
-	public ShopCategoryMenu(Player player, BoutiquePlugin plugin, ShopCategory category, ShopCategoryListMenu previousMenu) {
+	public ShopCategoryMenu(Player player, ShopPlugin plugin, ShopCategory category, ShopCategoryListMenu previousMenu) {
 		super(player);
 		this.manager = plugin.getShopManager();
 		this.plugin = plugin;
@@ -62,15 +62,27 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 
 	@Override
 	protected MenuItem getMenuItem(ShopItem item) {
-		return new MenuItem(getConfigurableItem(item), event -> {
-			new ConfirmMenu(player, "§2§lConfirmer", "§aVoulez-vous vraiment acheter " + item.getDisplay() + " §apour " + item.getPrice() + " Primals ?" ,
+		ConfigurableItem configurableItem = new ConfigurableItem(getConfigurableItem(item));
+		for (int i = 0; i < configurableItem.getLore().size() ; i++) {
+			String line = configurableItem.getLore().get(i);
+			if(line.contains("%price_display%")){
+				if(item.getPriceModifier() >= 1){
+					line = line.replace("%price_display%", plugin.getConfig().getString("placeholders.price-display"));
+				}else{
+					line = line.replace("%price_display%", plugin.getConfig().getString("placeholders.promo-price-display"));
+					line = line.replace("%old_price%", item.getPrice()+"");
+					line = line.replace("%discount_percent%", (int)(100-item.getPriceModifier()*100.0)+"");
+				}
+				line = line.replace("%price%", (int)(item.getPrice()*item.getPriceModifier())+"");
+				configurableItem.getLore().set(i, line);
+			}
+		}
+		return new MenuItem(configurableItem, event -> {
+			new ConfirmMenu(player, "§2§lConfirmer", "§aVoulez-vous vraiment acheter " + item.getDisplay().getName() + " §apour " + item.getPrice() + " Primals ?" ,
 					confirmed -> {
 				if(confirmed){
-					if(!item.getBuyCommands().isEmpty()){
-						for(String command : item.getBuyCommands()){
-							Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", player.getName()));
-						}
-					}
+					player.closeInventory();
+					plugin.getTransactionManager().buy(player, item);
 				}else{
 					this.open();
 				}
@@ -98,6 +110,6 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 	}
 
 	private CompletableFuture<MenuItem> getTokensItem(){
-		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getSqlStorage().getTokens(player)).build()));
+		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getDatabaseManager().getTokens(player)).build()));
 	}
 }

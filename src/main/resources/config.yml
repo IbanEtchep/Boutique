@@ -7,14 +7,19 @@ database:
   password: password
 
 #Discount in percentage applied to whole shop.
-whole-shop-promo: 0
+whole-shop-discount: 0
+
+messages:
+  currency-name: "tokens"
+  not-enough-money: "&cVous n'avez pas assez de tokens pour acheter ça !"
+  buy-success: "&aVotre achat a été un succès !"
 
 placeholders:
   # %price_display% placeholder's format (you can use %price% placeholder)
   price-display: "%price% tokens"
   # %promo_price_display% placeholder's format (you can use %price%, %old_price% and %discount_percent% placeholders)
   # %price_display% is replaced by this placeholder when item is discounted
-  promo-price-display: "&m%old_price% &f%price% tokens (-%discount_percent%%)"
+  discount-price-display: "&m%old_price% &f%price% tokens (-%discount_percent%%)"
 
 categories:
   #category ID (must be unique)

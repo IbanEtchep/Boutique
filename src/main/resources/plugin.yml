@@ -1,6 +1,6 @@
 name: Boutique
 version: ${project.version}
-main: fr.iban.boutique.BoutiquePlugin
+main: fr.iban.boutique.ShopPlugin
 api-version: 1.17
 prefix: Boutique
 authors: [ Iban ]
@@ -9,3 +9,4 @@ depend: [MenuAPI]
 
 commands:
   boutique:
+  tokens:

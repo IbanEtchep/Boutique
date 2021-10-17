@@ -1,6 +1,8 @@
 package fr.iban.boutique.sql;
 
-import fr.iban.boutique.BoutiquePlugin;
+import fr.iban.boutique.ShopItem;
+import fr.iban.boutique.ShopPlugin;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import javax.sql.DataSource;
@@ -15,22 +17,21 @@ import java.util.concurrent.CompletionException;
 public class SqlStorage extends AbstractStorage {
 
     private final DataSource dataSource;
-    private BoutiquePlugin plugin;
 
-    public SqlStorage(BoutiquePlugin plugin){
-        this.plugin = plugin;
+    public SqlStorage(){
         this.dataSource = DbAccess.getDataSource();
+        DbTables.createTables();
     }
 
     public int getTokens(Player player){
-        String sql = "SELECT money FROM users WHERE name LIKE ?;";
+        String sql = "SELECT tokens FROM igshop_players WHERE user_id=(SELECT id FROM users WHERE name=?);";
         int tokens = 0;
         try(Connection connection = dataSource.getConnection()){
             try(PreparedStatement ps = connection.prepareStatement(sql)){
                 ps.setString(1, player.getName());
                 try(ResultSet rs = ps.executeQuery()){
                     while(rs.next()) {
-                        tokens = rs.getInt("money");
+                        tokens = rs.getInt("tokens");
                     }
                 }
             }
@@ -43,6 +44,30 @@ public class SqlStorage extends AbstractStorage {
     private void updateMoney(Player player, int amount, String sql){
         try (Connection connection = dataSource.getConnection()) {
             try(PreparedStatement ps = connection.prepareStatement(sql)){
+                ps.setString(1, player.getName());
+                ps.setInt(2, amount);
+                ps.setInt(3, amount);
+                ps.executeUpdate();
+            }
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setTokens(Player player, int amount){
+        String sql = "INSERT INTO igshop_players (user_id, tokens) VALUES ((SELECT id FROM users WHERE name=?), ?) ON DUPLICATE KEY UPDATE tokens=?";
+        updateMoney(player, amount, sql);
+    }
+
+    public void addTokens(Player player, int amount){
+        String sql = "INSERT INTO igshop_players (user_id, tokens) VALUES ((SELECT id FROM users WHERE name=?), ?) ON DUPLICATE KEY UPDATE tokens=tokens+?";
+        updateMoney(player, amount, sql);
+    }
+
+    public void removeTokens(Player player, int amount){
+        String sql = "UPDATE igshop_players SET tokens=tokens-? WHERE user_id=(SELECT id FROM users WHERE name=?);";
+        try (Connection connection = dataSource.getConnection()) {
+            try(PreparedStatement ps = connection.prepareStatement(sql)){
                 ps.setInt(1, amount);
                 ps.setString(2, player.getName());
                 ps.executeUpdate();
@@ -52,49 +77,19 @@ public class SqlStorage extends AbstractStorage {
         }
     }
 
-    public void setTokens(Player player, int amount){
-        String sql = "UPDATE users SET money=? WHERE name LIKE ?;";
-        updateMoney(player, amount, sql);
-    }
 
-    public void addTokens(Player player, int amount){
-        String sql = "UPDATE users SET money=money+? WHERE name LIKE ?;";
-        updateMoney(player, amount, sql);
-    }
-
-    public void removeTokens(Player player, int amount){
-        String sql = "UPDATE users SET money=money-? WHERE name LIKE ?;";
-        updateMoney(player, amount, sql);
-    }
-
-    public CompletableFuture<Integer> getTokensAsync(Player player){
-        return future(() -> getTokens(player));
-    }
-
-    public <T> CompletableFuture<T> future(Callable<T> supplier) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return supplier.call();
-            } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                    throw (RuntimeException) e;
-                }
-                throw new CompletionException(e);
+    public void addPurchaseHistory(Player player, ShopItem item){
+        String sql = "INSERT INTO `igshop_history`(`user_id`, `product_name`, `price`, `created_at`) VALUES ((SELECT id FROM users WHERE name=?), ?, ?, NOW());";
+        try (Connection connection = dataSource.getConnection()) {
+            try(PreparedStatement ps = connection.prepareStatement(sql)){
+                ps.setString(1, player.getName());
+                ps.setString(2, ChatColor.stripColor(item.getDisplay().getBuiltItemStack().getItemMeta().getDisplayName()));
+                ps.setInt(3, item.getPrice());
+                ps.executeUpdate();
             }
-        });
-    }
 
-    public CompletableFuture<Void> future(Runnable runnable) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                    throw (RuntimeException) e;
-                }
-                throw new CompletionException(e);
-            }
-        });
+        }catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
-
 }
