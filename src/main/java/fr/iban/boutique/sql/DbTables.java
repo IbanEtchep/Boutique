@@ -21,8 +21,8 @@ public class DbTables {
 					");");
 		createTable("CREATE TABLE IF NOT EXISTS igshop_history (" +
 				"  id          int auto_increment PRIMARY KEY," +
-				"  user_id    int(10)  NOT NULL UNIQUE," +
-				"  product_name    varchar(100)  NOT NULL UNIQUE," +
+				"  user_id    int(10)  NOT NULL," +
+				"  product_name    varchar(100)  NOT NULL," +
 				"  price        int  NOT NULL," +
 				"  created_at        timestamp  NOT NULL" +
 				");");

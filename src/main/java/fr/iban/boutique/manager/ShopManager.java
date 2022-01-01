@@ -12,7 +12,7 @@ import fr.iban.boutique.ShopPlugin;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import fr.iban.menuapi.ConfigurableItem;
+import fr.iban.menuapi.menuitem.ConfigurableItem;
 
 public class ShopManager {
 	
@@ -70,7 +70,7 @@ public class ShopManager {
 	
     public void saveShopCategory(ShopCategory category) {
     	String path = new StringBuilder("categories.").append(category.getId()).append(".").toString();
-    	config.set(path+"display", category.getDisplay());
+    	config.set(path+"menuitem", category.getDisplay());
     	config.set(path+"discount", category.getDiscount());
 		plugin.saveConfig();
     }
@@ -101,7 +101,7 @@ public class ShopManager {
     
     public void saveShopItem(ShopItem item, ShopCategory category) {
     	String path = new StringBuilder("categories.").append(category.getId()).append(".").append("items.").append(item.getId()).append(".").toString();
-    	config.set(path+"display", item.getDisplay());
+    	config.set(path+"menuitem", item.getDisplay());
     	config.set(path+"price", item.getPrice());
     	config.set(path+"discount", item.getDiscount());
     	config.set(path+"buycommands", item.getBuyCommands());

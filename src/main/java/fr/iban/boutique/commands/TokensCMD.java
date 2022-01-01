@@ -47,6 +47,9 @@ public class TokensCMD implements CommandExecutor {
                                     String msg = "§eLe solde de " + to.getName() + " a été défini à " + amount + " " + currency + ".";
                                     sender.sendMessage(msg);
                                     plugin.getLogger().info(msg);
+                                    Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to));
+                                    });
 
                                 }catch (NumberFormatException e){
                                     sender.sendMessage("§cLe nombre doit être un nombre entier !");
@@ -63,6 +66,9 @@ public class TokensCMD implements CommandExecutor {
                                     String msg = "§e" + amount + " " + currency + " ont été ajoutés au solde de " + to.getName() + ".";
                                     sender.sendMessage(msg);
                                     plugin.getLogger().info(msg);
+                                    Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to));
+                                    });
 
                                 }catch (NumberFormatException e){
                                     sender.sendMessage("§cLe nombre doit être un nombre entier !");
@@ -83,6 +89,9 @@ public class TokensCMD implements CommandExecutor {
                                         String msg = "§e" + amount + " " + currency + " ont été retirés du solde de " + to.getName() + ".";
                                         sender.sendMessage(msg);
                                         plugin.getLogger().info(msg);
+                                        Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                                            plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to));
+                                        });
                                     });
 
                                 }catch (NumberFormatException e){

@@ -28,6 +28,9 @@ public class TransactionManager {
                         player.sendMessage(HexColor.translateColorCodes(plugin.getConfig().getString("messages.buy-success")));
                         databaseManager.addPurchaseHistory(player, item);
                         databaseManager.removeTokens(player, price);
+                        Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player));
+                        });
                     }
                 } else {
                     player.sendMessage(HexColor.translateColorCodes(plugin.getConfig().getString("messages.not-enough-money")));

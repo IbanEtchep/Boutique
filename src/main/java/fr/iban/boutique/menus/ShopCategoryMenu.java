@@ -1,24 +1,22 @@
 package fr.iban.boutique.menus;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import fr.iban.boutique.ShopPlugin;
 import fr.iban.boutique.ShopCategory;
+import fr.iban.boutique.ShopItem;
+import fr.iban.boutique.ShopPlugin;
+import fr.iban.boutique.manager.ShopManager;
 import fr.iban.menuapi.MenuAPI;
+import fr.iban.menuapi.menu.ConfigurableMenu;
 import fr.iban.menuapi.menu.ConfirmMenu;
+import fr.iban.menuapi.menuitem.ConfigurableItem;
+import fr.iban.menuapi.menuitem.MenuItem;
+import fr.iban.menuapi.utils.HexColor;
 import fr.iban.menuapi.utils.ItemBuilder;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import fr.iban.boutique.manager.ShopManager;
-import fr.iban.boutique.ShopItem;
-import fr.iban.menuapi.MenuItem;
-import fr.iban.menuapi.menu.ConfigurableMenu;
-import fr.iban.menuapi.ConfigurableItem;
-import fr.iban.menuapi.utils.HexColor;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 
@@ -51,7 +49,7 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 
 	@Override
 	protected ConfigurableItem getConfigurableItem(ShopItem object) {
-		return object.getDisplay();
+		return new ConfigurableItem(object.getDisplay());
 	}
 
 	@Override
@@ -77,26 +75,27 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 				configurableItem.getLore().set(i, line);
 			}
 		}
-		return new MenuItem(configurableItem, event -> {
-			new ConfirmMenu(player, "§2§lConfirmer", "§aVoulez-vous vraiment acheter " + item.getDisplay().getName() + " §apour " + item.getPrice() + " Primals ?" ,
+		return configurableItem.setClickCallback(e -> {
+			new ConfirmMenu(player, String.format("§2§lConfirmer", "§aVoulez-vous vraiment acheter " + item.getDisplay().getName() + " §apour " + item.getPrice() + " %s ?",plugin.getConfig().getString("messages.currency-name")) ,
 					confirmed -> {
-				if(confirmed){
-					player.closeInventory();
-					plugin.getTransactionManager().buy(player, item);
-				}else{
-					this.open();
-				}
-			}).open();
+						if(confirmed){
+							player.closeInventory();
+							plugin.getTransactionManager().buy(player, item);
+						}else{
+							this.open();
+						}
+					}).open();
 		});
 	}
 
 	@Override
-	public void setMenuTemplateItems() {
+	public void setMenuItems() {
 		for(Map.Entry<Integer, ConfigurableItem> entry : MenuAPI.getInstance().getTemplateManager().getTemplate("boutique").getDisplays().entrySet()){
-			setMenuTemplateItem(new MenuItem(entry.getValue()));
+			setMenuTemplateItem(entry.getValue());
 		}
 		addMenuBottons();
 		addItemAsync(new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("§cChargement...").build()), getTokensItem());
+		super.setMenuItems();
 	}
 
 	@Override
@@ -109,7 +108,22 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 		manager.deleteShopItem(item, category);
 	}
 
-	private CompletableFuture<MenuItem> getTokensItem(){
-		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getDatabaseManager().getTokens(player)).build()));
+	private CompletableFuture<MenuItem> getTokensItem() {
+		return CompletableFuture.supplyAsync(() -> new MenuItem(4,
+						new ItemBuilder(Material.RAW_GOLD)
+								.setDisplayName("§5§lInformations")
+								.addLore("")
+								.addLore("§7Cette boutique est à votre disposition")
+								.addLore("§7pour vous permettre de soutenir le serveur")
+								.addLore("§7dans le but de couvrir les frais engendrés")
+								.addLore("§7par le serveur et nous aider à le développer.")
+								.addLore("")
+								.addLore(String.format("§d§lVos %s : §f§l" + plugin.getDatabaseManager().getTokens(player), plugin.getConfig().getString("messages.currency-name")))
+								.addLore("")
+								.addLore(String.format("§7§lCliquez-ici pour acheter des %s.", plugin.getConfig().getString("messages.currency-name")))
+								.build()).setClickCallback(e -> {
+					e.getWhoClicked().sendMessage(String.format("§5§l> §dCliquez sur le lien : %s", plugin.getConfig().getString("messages.buy-link")));
+				})
+		);
 	}
 }

@@ -1,6 +1,7 @@
 package fr.iban.boutique;
 
 import fr.iban.boutique.commands.TokensCMD;
+import fr.iban.boutique.listener.JoinQuitListener;
 import fr.iban.boutique.manager.ShopManager;
 import fr.iban.boutique.manager.DatabaseManager;
 import fr.iban.boutique.manager.TransactionManager;
@@ -13,12 +14,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import fr.iban.boutique.commands.BoutiqueCMD;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class ShopPlugin extends JavaPlugin {
 	
     private ShopManager shopManager;
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private static ShopPlugin instance;
+    private Map<UUID, Integer> tokensCache = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -33,8 +40,15 @@ public final class ShopPlugin extends JavaPlugin {
         this.shopManager = new ShopManager(this);
         this.databaseManager = new DatabaseManager(this);
         this.transactionManager = new TransactionManager(this);
+
         getCommand("boutique").setExecutor(new BoutiqueCMD(this));
         getCommand("tokens").setExecutor(new TokensCMD(this));
+
+        registerListeners(new JoinQuitListener(this));
+
+        if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new ShopPlaceHolders(this).register();
+        }
     }
 
     @Override
@@ -63,5 +77,9 @@ public final class ShopPlugin extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public Map<UUID, Integer> getTokensCache() {
+        return tokensCache;
     }
 }

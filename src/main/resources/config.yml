@@ -13,6 +13,7 @@ messages:
   currency-name: "tokens"
   not-enough-money: "&cVous n'avez pas assez de tokens pour acheter ça !"
   buy-success: "&aVotre achat a été un succès !"
+  buy-link: "https://lien.fr/"
 
 placeholders:
   # %price_display% placeholder's format (you can use %price% placeholder)

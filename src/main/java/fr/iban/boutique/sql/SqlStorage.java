@@ -83,11 +83,10 @@ public class SqlStorage extends AbstractStorage {
         try (Connection connection = dataSource.getConnection()) {
             try(PreparedStatement ps = connection.prepareStatement(sql)){
                 ps.setString(1, player.getName());
-                ps.setString(2, ChatColor.stripColor(item.getDisplay().getBuiltItemStack().getItemMeta().getDisplayName()));
+                ps.setString(2, ChatColor.stripColor(item.getDisplay().getItemStack().getItemMeta().getDisplayName()));
                 ps.setInt(3, item.getPrice());
                 ps.executeUpdate();
             }
-
         }catch (SQLException e) {
             e.printStackTrace();
         }

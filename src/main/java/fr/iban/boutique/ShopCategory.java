@@ -2,8 +2,7 @@ package fr.iban.boutique;
 
 import java.util.HashMap;
 
-import fr.iban.boutique.ShopItem;
-import fr.iban.menuapi.ConfigurableItem;
+import fr.iban.menuapi.menuitem.ConfigurableItem;
 
 public class ShopCategory {
 	

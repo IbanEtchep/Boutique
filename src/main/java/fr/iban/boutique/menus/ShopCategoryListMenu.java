@@ -1,21 +1,21 @@
 package fr.iban.boutique.menus;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
+import fr.iban.boutique.ShopCategory;
 import fr.iban.boutique.ShopPlugin;
+import fr.iban.boutique.manager.ShopManager;
 import fr.iban.menuapi.MenuAPI;
+import fr.iban.menuapi.menu.ConfigurableMenu;
+import fr.iban.menuapi.menuitem.ConfigurableItem;
+import fr.iban.menuapi.menuitem.MenuItem;
 import fr.iban.menuapi.utils.ItemBuilder;
+import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
-import fr.iban.boutique.manager.ShopManager;
-import fr.iban.boutique.ShopCategory;
-import fr.iban.menuapi.MenuItem;
-import fr.iban.menuapi.menu.ConfigurableMenu;
-import fr.iban.menuapi.ConfigurableItem;
-import net.md_5.bungee.api.ChatColor;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 
@@ -45,7 +45,7 @@ public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 
 	@Override
 	protected ConfigurableItem getConfigurableItem(ShopCategory category) {
-		return category.getDisplay();
+		return new ConfigurableItem(category.getDisplay());
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 
 	@Override
 	protected MenuItem getMenuItem(ShopCategory category) {
-		return new MenuItem(getConfigurableItem(category), event -> {
+		return getConfigurableItem(category).setClickCallback(e -> {
 			new ShopCategoryMenu(player, plugin, category, this).open();
 		});
 	}
@@ -72,14 +72,30 @@ public class ShopCategoryListMenu extends ConfigurableMenu<ShopCategory> {
 	}
 
 	@Override
-	public void setMenuTemplateItems() {
+	public void setMenuItems() {
 		for(Map.Entry<Integer, ConfigurableItem> entry : MenuAPI.getInstance().getTemplateManager().getTemplate("boutique").getDisplays().entrySet()){
-			setMenuTemplateItem(new MenuItem(entry.getValue()));
+			setMenuTemplateItem(entry.getValue());
 		}
 		addItemAsync(new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("§cChargement...").build()), getTokensItem());
+		super.setMenuItems();
 	}
 
-	private CompletableFuture<MenuItem> getTokensItem(){
-		return CompletableFuture.supplyAsync(() -> new MenuItem(4, new ItemBuilder(Material.RAW_GOLD).setDisplayName("Primals : " + plugin.getDatabaseManager().getTokens(player)).build()));
+	private CompletableFuture<MenuItem> getTokensItem() {
+		return CompletableFuture.supplyAsync(() -> new MenuItem(4,
+						new ItemBuilder(Material.RAW_GOLD)
+								.setDisplayName("§5§lInformations")
+								.addLore("")
+								.addLore("§7Cette boutique est à votre disposition")
+								.addLore("§7pour vous permettre de soutenir le serveur")
+								.addLore("§7dans le but de couvrir les frais engendrés")
+								.addLore("§7par le serveur et nous aider à le développer.")
+								.addLore("")
+								.addLore(String.format("§d§lVos %s : §f§l" + plugin.getDatabaseManager().getTokens(player), plugin.getConfig().getString("messages.currency-name")))
+								.addLore("")
+								.addLore(String.format("§7§lCliquez-ici pour acheter des %s.", plugin.getConfig().getString("messages.currency-name")))
+								.build()).setClickCallback(e -> {
+					e.getWhoClicked().sendMessage(String.format("§5§l> §dCliquez sur le lien : %s", plugin.getConfig().getString("messages.buy-link")));
+				})
+		);
 	}
 }

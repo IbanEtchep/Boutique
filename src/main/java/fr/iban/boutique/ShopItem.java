@@ -2,7 +2,7 @@ package fr.iban.boutique;
 
 import java.util.List;
 
-import fr.iban.menuapi.ConfigurableItem;
+import fr.iban.menuapi.menuitem.ConfigurableItem;
 
 public class ShopItem {
 	
