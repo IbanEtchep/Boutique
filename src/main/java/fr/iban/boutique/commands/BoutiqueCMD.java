@@ -44,7 +44,7 @@ public class BoutiqueCMD implements CommandExecutor {
 							Player to = Bukkit.getPlayer(args[1]);
 							if(to != null){
 								plugin.getDatabaseManager().getTokensAsync(player.getName()).thenAccept(tokens -> {
-									if(tokens > amount){
+									if(tokens >= amount){
 										plugin.getDatabaseManager().removeTokens(player.getName(), amount);
 										plugin.getDatabaseManager().addTokens(to.getName(), amount);
 										player.sendMessage("§aVous avez envoyé " + amount + " " + currency + " à " + to.getName() + ".");
