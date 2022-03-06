@@ -20,7 +20,7 @@ public class JoinQuitListener implements Listener {
     public void onJoin(PlayerJoinEvent e){
         Player player = e.getPlayer();
         Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player));
+            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getName()));
         });
     }
 

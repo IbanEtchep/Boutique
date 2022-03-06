@@ -20,35 +20,35 @@ public class DatabaseManager {
         this.plugin = plugin;
     }
 
-    public int getTokens(Player player) {
-        return storage.getTokens(player);
+    public int getTokens(String playerName) {
+        return storage.getTokens(playerName);
     }
 
-    public CompletableFuture<Integer> getTokensAsync(Player player){
-        return future(() -> getTokens(player));
+    public CompletableFuture<Integer> getTokensAsync(String playerName){
+        return future(() -> getTokens(playerName));
     }
 
-    public CompletableFuture<Void> addPurchaseHistory(Player player, ShopItem item){
+    public CompletableFuture<Void> addPurchaseHistory(String playerName, ShopItem item){
         return future(() -> {
-            storage.addPurchaseHistory(player, item);
+            storage.addPurchaseHistory(playerName, item);
         });
     }
 
-    public CompletableFuture<Void> removeTokens(Player player, int amount){
+    public CompletableFuture<Void> removeTokens(String playerName, int amount){
         return future(() -> {
-            storage.removeTokens(player, amount);
+            storage.removeTokens(playerName, amount);
         });
     }
 
-    public CompletableFuture<Void> addTokens(Player player, int amount){
+    public CompletableFuture<Void> addTokens(String playerName, int amount){
         return future(() -> {
-            storage.addTokens(player, amount);
+            storage.addTokens(playerName, amount);
         });
     }
 
-    public CompletableFuture<Void> setTokens(Player player, int amount){
+    public CompletableFuture<Void> setTokens(String playerName, int amount){
         return future(() -> {
-            storage.setTokens(player, amount);
+            storage.setTokens(playerName, amount);
         });
     }
 

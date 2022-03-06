@@ -43,13 +43,17 @@ public class BoutiqueCMD implements CommandExecutor {
 							int amount = Integer.parseInt(args[2]);
 							Player to = Bukkit.getPlayer(args[1]);
 							if(to != null){
-								plugin.getDatabaseManager().getTokensAsync(player).thenAccept(tokens -> {
+								plugin.getDatabaseManager().getTokensAsync(player.getName()).thenAccept(tokens -> {
 									if(tokens > amount){
-										plugin.getDatabaseManager().removeTokens(player, amount);
-										plugin.getDatabaseManager().addTokens(to, amount);
+										plugin.getDatabaseManager().removeTokens(player.getName(), amount);
+										plugin.getDatabaseManager().addTokens(to.getName(), amount);
 										player.sendMessage("§aVous avez envoyé " + amount + " " + currency + " à " + to.getName() + ".");
 										to.sendMessage("§a"+ player.getName() + " vous a envoyé " + amount + " " + currency + ".");
 										plugin.getLogger().info(player.getName() + " a envoyé " + amount + " " + currency + " à " + to.getName() + "." );
+										Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+											plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getName()));
+											plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getName()));
+										});
 									}else{
 										player.sendMessage("§cIl vous manque " + (amount-tokens) + " " + currency + ".");
 									}

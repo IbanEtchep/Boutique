@@ -17,7 +17,7 @@ public class TransactionManager {
     }
 
     public void buy(Player player, ShopItem item){
-        databaseManager.getTokensAsync(player).thenAccept(money -> {
+        databaseManager.getTokensAsync(player.getName()).thenAccept(money -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 int price = (int)(item.getPrice() * item.getPriceModifier());
                 if (money >= price) {
@@ -26,10 +26,10 @@ public class TransactionManager {
                             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", player.getName()));
                         }
                         player.sendMessage(HexColor.translateColorCodes(plugin.getConfig().getString("messages.buy-success")));
-                        databaseManager.addPurchaseHistory(player, item);
-                        databaseManager.removeTokens(player, price);
+                        databaseManager.addPurchaseHistory(player.getName(), item);
+                        databaseManager.removeTokens(player.getName(), price);
                         Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player));
+                            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getName()));
                         });
                     }
                 } else {

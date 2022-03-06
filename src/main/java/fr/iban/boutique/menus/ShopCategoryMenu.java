@@ -118,7 +118,7 @@ public class ShopCategoryMenu extends ConfigurableMenu<ShopItem> {
 								.addLore("§7dans le but de couvrir les frais engendrés")
 								.addLore("§7par le serveur et nous aider à le développer.")
 								.addLore("")
-								.addLore(String.format("§d§lVos %s : §f§l" + plugin.getDatabaseManager().getTokens(player), plugin.getConfig().getString("messages.currency-name")))
+								.addLore(String.format("§d§lVos %s : §f§l" + plugin.getDatabaseManager().getTokens(player.getName()), plugin.getConfig().getString("messages.currency-name")))
 								.addLore("")
 								.addLore(String.format("§7§lCliquez-ici pour acheter des %s.", plugin.getConfig().getString("messages.currency-name")))
 								.build()).setClickCallback(e -> {

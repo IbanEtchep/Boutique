@@ -7,13 +7,13 @@ import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractStorage {
 
-    public abstract int getTokens(Player player);
+    public abstract int getTokens(String playerName);
 
-    public abstract void setTokens(Player player, int amount);
+    public abstract void setTokens(String playerName, int amount);
 
-    public abstract void addTokens(Player player, int amount);
+    public abstract void addTokens(String playerName, int amount);
 
-    public abstract void removeTokens(Player player, int amount);
+    public abstract void removeTokens(String playerName, int amount);
 
-    public abstract void addPurchaseHistory(Player player, ShopItem item);
+    public abstract void addPurchaseHistory(String playerName, ShopItem item);
 }
