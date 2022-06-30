@@ -69,14 +69,14 @@ public class ShopManager {
 	}
 	
     public void saveShopCategory(ShopCategory category) {
-    	String path = new StringBuilder("categories.").append(category.getId()).append(".").toString();
+    	String path = "categories." + category.getId() + ".";
     	config.set(path+"menuitem", category.getDisplay());
     	config.set(path+"discount", category.getDiscount());
 		plugin.saveConfig();
     }
     
     public void deleteShopCategory(ShopCategory category) {
-		String path = new StringBuilder("categories.").append(category.getId()).toString();
+		String path = "categories." + category.getId();
 		config.set(path, null);
 		categories.remove(category);
 		plugin.saveConfig();
@@ -100,7 +100,7 @@ public class ShopManager {
     }
     
     public void saveShopItem(ShopItem item, ShopCategory category) {
-    	String path = new StringBuilder("categories.").append(category.getId()).append(".").append("items.").append(item.getId()).append(".").toString();
+    	String path = "categories." + category.getId() + "." + "items." + item.getId() + ".";
     	config.set(path+"menuitem", item.getDisplay());
     	config.set(path+"price", item.getPrice());
     	config.set(path+"discount", item.getDiscount());
@@ -109,7 +109,7 @@ public class ShopManager {
     }
     
     public void deleteShopItem(ShopItem item, ShopCategory category) {
-    	config.set(new StringBuilder("categories.").append(category.getId()).append(".").append("items.").append(item.getId()).toString(), null);
+    	config.set("categories." + category.getId() + "." + "items." + item.getId(), null);
     	category.getShopitems().remove(item);
 		plugin.saveConfig();
 	}
