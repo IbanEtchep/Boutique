@@ -25,7 +25,7 @@ public final class ShopPlugin extends JavaPlugin {
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private static ShopPlugin instance;
-    private Map<UUID, Integer> tokensCache = new HashMap<>();
+    private final Map<UUID, Integer> tokensCache = new HashMap<>();
 
     @Override
     public void onEnable() {

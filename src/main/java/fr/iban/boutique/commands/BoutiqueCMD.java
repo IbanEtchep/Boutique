@@ -31,7 +31,7 @@ public class BoutiqueCMD implements CommandExecutor {
 			Player player = (Player)sender;
 			if(args.length == 0) {
 				new ShopCategoryListMenu(player, plugin).open();
-			}else if(args.length >= 1) {
+			}else {
 				if(args[0].equalsIgnoreCase("createCategory") && player.hasPermission("boutique.manage") && args.length == 2) {
 					String name = args[1];
 					manager.addCategory(name);
