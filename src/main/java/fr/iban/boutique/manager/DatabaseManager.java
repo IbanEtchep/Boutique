@@ -71,10 +71,7 @@ public class DatabaseManager {
             try {
                 runnable.run();
             } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                    throw (RuntimeException) e;
-                }
-                throw new CompletionException(e);
+                throw e;
             }
         });
     }
