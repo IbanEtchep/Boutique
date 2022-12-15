@@ -29,7 +29,7 @@ public class TokensCMD implements CommandExecutor {
             if(args.length >= 2){
                 OfflinePlayer to = Bukkit.getOfflinePlayer(args[1]);
 
-                if(to.hasPlayedBefore()){
+                if(to.hasPlayedBefore() || to.isOnline()){
                     switch (args[0]){
 
                         case "get":
