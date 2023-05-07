@@ -6,6 +6,7 @@ import fr.iban.boutique.sql.AbstractStorage;
 import fr.iban.boutique.sql.SqlStorage;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -20,35 +21,35 @@ public class DatabaseManager {
         this.plugin = plugin;
     }
 
-    public int getTokens(String playerName) {
-        return storage.getTokens(playerName);
+    public int getTokens(UUID uuid) {
+        return storage.getTokens(uuid);
     }
 
-    public CompletableFuture<Integer> getTokensAsync(String playerName){
-        return future(() -> getTokens(playerName));
+    public CompletableFuture<Integer> getTokensAsync(UUID uuid){
+        return future(() -> getTokens(uuid));
     }
 
-    public CompletableFuture<Void> addPurchaseHistory(String playerName, ShopItem item){
+    public CompletableFuture<Void> addPurchaseHistory(UUID uuid, ShopItem item){
         return future(() -> {
-            storage.addPurchaseHistory(playerName, item);
+            storage.addPurchaseHistory(uuid, item);
         });
     }
 
-    public CompletableFuture<Void> removeTokens(String playerName, int amount){
+    public CompletableFuture<Void> removeTokens(UUID uuid, int amount){
         return future(() -> {
-            storage.removeTokens(playerName, amount);
+            storage.removeTokens(uuid, amount);
         });
     }
 
-    public CompletableFuture<Void> addTokens(String playerName, int amount){
+    public CompletableFuture<Void> addTokens(UUID uuid, int amount){
         return future(() -> {
-            storage.addTokens(playerName, amount);
+            storage.addTokens(uuid, amount);
         });
     }
 
-    public CompletableFuture<Void> setTokens(String playerName, int amount){
+    public CompletableFuture<Void> setTokens(UUID uuid, int amount){
         return future(() -> {
-            storage.setTokens(playerName, amount);
+            storage.setTokens(uuid, amount);
         });
     }
 

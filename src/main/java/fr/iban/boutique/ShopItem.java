@@ -6,7 +6,7 @@ import fr.iban.menuapi.menuitem.ConfigurableItem;
 
 public class ShopItem {
 	
-	private int id;
+	private final int id;
 	private int price;
 	private int discount;
 	private ConfigurableItem display;

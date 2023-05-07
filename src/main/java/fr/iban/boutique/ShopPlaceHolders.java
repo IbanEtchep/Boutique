@@ -36,7 +36,7 @@ public class ShopPlaceHolders extends PlaceholderExpansion {
 
         // %someplugin_placeholder1%
         if(identifier.equals("tokens")){
-            return plugin.getTokensCache().getOrDefault(player.getUniqueId(), 0)+"";
+            return String.valueOf(plugin.getTokensCache().getOrDefault(player.getUniqueId(), 0));
         }
 
         return null;

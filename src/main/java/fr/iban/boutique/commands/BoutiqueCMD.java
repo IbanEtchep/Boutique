@@ -15,8 +15,8 @@ import fr.iban.menuapi.utils.HexColor;
 public class BoutiqueCMD implements CommandExecutor {
 
 	private final ShopPlugin plugin;
-	private ShopManager manager;
-	private String currency;
+	private final ShopManager manager;
+	private final String currency;
 
 	public BoutiqueCMD(ShopPlugin plugin) {
 		this.manager = plugin.getShopManager();
@@ -43,16 +43,20 @@ public class BoutiqueCMD implements CommandExecutor {
 							int amount = Integer.parseInt(args[2]);
 							Player to = Bukkit.getPlayer(args[1]);
 							if(to != null){
-								plugin.getDatabaseManager().getTokensAsync(player.getName()).thenAccept(tokens -> {
+								if(amount <= 0) {
+									player.sendMessage("§cLe montant doit être positif.");
+									return false;
+								}
+								plugin.getDatabaseManager().getTokensAsync(player.getUniqueId()).thenAccept(tokens -> {
 									if(tokens >= amount){
-										plugin.getDatabaseManager().removeTokens(player.getName(), amount);
-										plugin.getDatabaseManager().addTokens(to.getName(), amount);
+										plugin.getDatabaseManager().removeTokens(player.getUniqueId(), amount);
+										plugin.getDatabaseManager().addTokens(to.getUniqueId(), amount);
 										player.sendMessage("§aVous avez envoyé " + amount + " " + currency + " à " + to.getName() + ".");
 										to.sendMessage("§a"+ player.getName() + " vous a envoyé " + amount + " " + currency + ".");
 										plugin.getLogger().info(player.getName() + " a envoyé " + amount + " " + currency + " à " + to.getName() + "." );
 										Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-											plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getName()));
-											plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getName()));
+											plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getUniqueId()));
+											plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getUniqueId()));
 										});
 									}else{
 										player.sendMessage("§cIl vous manque " + (amount-tokens) + " " + currency + ".");

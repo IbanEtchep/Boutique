@@ -15,16 +15,15 @@ public class DbTables {
 	 */
 	private static void createplayersTable() {
 		createTable("CREATE TABLE IF NOT EXISTS igshop_players (" +
-					"  user_id          int(10) UNSIGNED PRIMARY KEY," +
-					"  tokens        int  NOT NULL," +
-					"  FOREIGN KEY (user_id) REFERENCES users(id)" +
+					"  uuid          VARCHAR(36) PRIMARY KEY," +
+					"  tokens        int  NOT NULL" +
 					");");
 		createTable("CREATE TABLE IF NOT EXISTS igshop_history (" +
-				"  id          int auto_increment PRIMARY KEY," +
-				"  user_id    int(10)  NOT NULL," +
+				"  uuid          VARCHAR(36)," +
 				"  product_name    varchar(100)  NOT NULL," +
 				"  price        int  NOT NULL," +
-				"  created_at        timestamp  NOT NULL" +
+				"  created_at        timestamp  NOT NULL," +
+				"   KEY idx_uuid (uuid)" +
 				");");
 	}
 

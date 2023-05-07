@@ -30,80 +30,74 @@ public class TokensCMD implements CommandExecutor {
                 OfflinePlayer to = Bukkit.getOfflinePlayer(args[1]);
 
                 if(to.hasPlayedBefore() || to.isOnline()){
-                    switch (args[0]){
-
-                        case "get":
-                            dbManager.getTokensAsync(to.getName()).thenAccept(tokens -> {
-                                sender.sendMessage("§c"+ to.getName()+ " a " + tokens + " " + currency +".");
-                            });
-                            break;
-
-                        case "set":
-                            if(args.length == 3){
-                                try{
+                    switch (args[0]) {
+                        case "get" -> dbManager.getTokensAsync(to.getUniqueId()).thenAccept(tokens -> {
+                            sender.sendMessage("§c" + to.getName() + " a " + tokens + " " + currency + ".");
+                        });
+                        case "set" -> {
+                            if (args.length == 3) {
+                                try {
                                     int amount = Integer.parseInt(args[2]);
-                                    plugin.getDatabaseManager().setTokens(to.getName(), amount);
-                                    if(to.getPlayer() != null){
+                                    plugin.getDatabaseManager().setTokens(to.getUniqueId(), amount);
+                                    if (to.getPlayer() != null) {
                                         to.getPlayer().sendMessage("§aVotre solde a été défini à " + amount + " " + currency + ".");
                                     }
                                     String msg = "§eLe solde de " + to.getName() + " a été défini à " + amount + " " + currency + ".";
                                     sender.sendMessage(msg);
                                     plugin.getLogger().info(msg);
                                     Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getName()));
+                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getUniqueId()));
                                     });
-                                }catch (NumberFormatException e){
+                                } catch (NumberFormatException e) {
                                     sender.sendMessage("§cLe nombre doit être un nombre entier !");
                                 }
                             }
-                            break;
-                        case "add":
-                            if(args.length == 3){
-                                try{
+                        }
+                        case "add" -> {
+                            if (args.length == 3) {
+                                try {
                                     int amount = Integer.parseInt(args[2]);
-                                    plugin.getDatabaseManager().addTokens(to.getName(), amount);
-                                    if(to.getPlayer() != null){
+                                    plugin.getDatabaseManager().addTokens(to.getUniqueId(), amount);
+                                    if (to.getPlayer() != null) {
                                         to.getPlayer().sendMessage("§aVous avez reçu " + amount + " " + currency + ".");
                                     }
                                     String msg = "§e" + amount + " " + currency + " ont été ajoutés au solde de " + to.getName() + ".";
                                     sender.sendMessage(msg);
                                     plugin.getLogger().info(msg);
                                     Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getName()));
+                                        plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getUniqueId()));
                                     });
 
-                                }catch (NumberFormatException e){
+                                } catch (NumberFormatException e) {
                                     sender.sendMessage("§cLe nombre doit être un nombre entier !");
                                 }
                             }
-                            break;
-
-                        case "remove":
-                            if(args.length == 3){
-                                try{
-                                    dbManager.getTokensAsync(to.getName()).thenAccept(tokens -> {
+                        }
+                        case "remove" -> {
+                            if (args.length == 3) {
+                                try {
+                                    dbManager.getTokensAsync(to.getUniqueId()).thenAccept(tokens -> {
                                         int amount = Integer.parseInt(args[2]);
-                                        if(tokens < amount){
+                                        if (tokens < amount) {
                                             amount = tokens;
                                         }
-                                        plugin.getDatabaseManager().removeTokens(to.getName(), amount);
-                                        if(to.getPlayer() != null){
+                                        plugin.getDatabaseManager().removeTokens(to.getUniqueId(), amount);
+                                        if (to.getPlayer() != null) {
                                             to.getPlayer().sendMessage("§a" + amount + " " + currency + " ont été retirés de vote solde.");
                                         }
                                         String msg = "§e" + amount + " " + currency + " ont été retirés du solde de " + to.getName() + ".";
                                         sender.sendMessage(msg);
                                         plugin.getLogger().info(msg);
                                         Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                                            plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getName()));
+                                            plugin.getTokensCache().put(to.getUniqueId(), plugin.getDatabaseManager().getTokens(to.getUniqueId()));
                                         });
                                     });
 
-                                }catch (NumberFormatException e){
+                                } catch (NumberFormatException e) {
                                     sender.sendMessage("§cLe nombre doit être un nombre entier !");
                                 }
                             }
-                            break;
-
+                        }
                     }
                 }else{
                     sender.sendMessage("§cCe joueur n'a jamais joué sur le serveur.");

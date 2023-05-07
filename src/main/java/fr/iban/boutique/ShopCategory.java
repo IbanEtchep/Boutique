@@ -6,8 +6,8 @@ import fr.iban.menuapi.menuitem.ConfigurableItem;
 
 public class ShopCategory {
 	
-	private int id;
-	private HashMap<Integer, ShopItem> shopitems = new HashMap<>();
+	private final int id;
+	private final HashMap<Integer, ShopItem> shopitems = new HashMap<>();
 	private ConfigurableItem display;
 	private int discount = 0;
 	

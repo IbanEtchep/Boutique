@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 public class JoinQuitListener implements Listener {
 
-    private ShopPlugin plugin;
+    private final ShopPlugin plugin;
 
     public JoinQuitListener(ShopPlugin plugin) {
         this.plugin = plugin;
@@ -20,7 +20,7 @@ public class JoinQuitListener implements Listener {
     public void onJoin(PlayerJoinEvent e){
         Player player = e.getPlayer();
         Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getName()));
+            plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getUniqueId()));
         });
     }
 
