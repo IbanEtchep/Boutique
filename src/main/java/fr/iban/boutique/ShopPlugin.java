@@ -34,7 +34,8 @@ public final class ShopPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
-    	saveDefaultConfig();
+        boolean hadLegacyConfig = new File(getDataFolder(), "config.yml").exists();
+        saveDefaultConfig();
         try {
             DbAccess.initPool(new DbCredentials(getConfig().getString("database.host"), getConfig().getString("database.user"), getConfig().getString("database.password"), getConfig().getString("database.dbname"), getConfig().getInt("database.port")));
         }catch (Exception e) {
@@ -65,8 +66,10 @@ public final class ShopPlugin extends JavaPlugin {
         if (!api.getProject().hasContent("boutique")) {
             try {
                 Optional<String> migrated = Optional.empty();
-                File legacy = new File(getDataFolder(), "config.yml");
-                if (legacy.exists()) migrated = LegacyConfigMigrator.migrate(Files.readString(legacy.toPath()));
+                if (hadLegacyConfig) {
+                    File legacy = new File(getDataFolder(), "config.yml");
+                    migrated = LegacyConfigMigrator.migrate(Files.readString(legacy.toPath()));
+                }
                 File projectsDir = new File(api.getPlugin().getDataFolder(), "projects");
                 if (Bootstrapper.bootstrapIfAbsent(projectsDir, migrated)) {
                     getLogger().warning("Contenu Boutique bootstrappé dans projects/boutique_shop"
