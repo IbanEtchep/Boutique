@@ -1,7 +1,6 @@
 package fr.iban.boutique.sql;
 
 import fr.iban.boutique.ShopItem;
-import org.bukkit.ChatColor;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -78,8 +77,8 @@ public class SqlStorage extends AbstractStorage {
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 ps.setString(1, uuid.toString());
-                ps.setString(2, ChatColor.stripColor(item.getDisplay().getItemStack().getItemMeta().getDisplayName()));
-                ps.setInt(3, item.getPrice());
+                ps.setString(2, item.getName());
+                ps.setInt(3, (int) Math.round(item.getPrice()));
                 ps.executeUpdate();
             }
         } catch (SQLException e) {

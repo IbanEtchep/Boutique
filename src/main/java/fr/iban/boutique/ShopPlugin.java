@@ -2,7 +2,6 @@ package fr.iban.boutique;
 
 import fr.iban.boutique.commands.TokensCMD;
 import fr.iban.boutique.listener.JoinQuitListener;
-import fr.iban.boutique.manager.ShopManager;
 import fr.iban.boutique.manager.DatabaseManager;
 import fr.iban.boutique.manager.TransactionManager;
 import fr.iban.boutique.sql.DbAccess;
@@ -12,16 +11,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import fr.iban.boutique.commands.BoutiqueCMD;
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public final class ShopPlugin extends JavaPlugin {
-	
-    private ShopManager shopManager;
+
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private static ShopPlugin instance;
@@ -37,11 +32,9 @@ public final class ShopPlugin extends JavaPlugin {
             getLogger().severe("Erreur lors de l'initialisation de la connexion sql.");
             //Bukkit.shutdown();
         }
-        this.shopManager = new ShopManager(this);
         this.databaseManager = new DatabaseManager(this);
         this.transactionManager = new TransactionManager(this);
 
-        getCommand("boutique").setExecutor(new BoutiqueCMD(this));
         getCommand("tokens").setExecutor(new TokensCMD(this));
 
         registerListeners(new JoinQuitListener(this));
@@ -66,10 +59,6 @@ public final class ShopPlugin extends JavaPlugin {
     public static ShopPlugin getInstance() {
         return instance;
     }
-
-    public ShopManager getShopManager() {
-		return shopManager;
-	}
 
     public TransactionManager getTransactionManager() {
         return transactionManager;

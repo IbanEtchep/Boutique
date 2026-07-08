@@ -13,6 +13,7 @@ messages:
   currency-name: "tokens"
   not-enough-money: "&cVous n'avez pas assez de tokens pour acheter ça !"
   buy-success: "&aVotre achat a été un succès !"
+  no-buy-commands: "&cCet article n'est pas disponible à l'achat pour le moment."
   buy-link: "https://lien.fr/"
 
 placeholders:

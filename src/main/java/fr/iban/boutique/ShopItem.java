@@ -2,68 +2,63 @@ package fr.iban.boutique;
 
 import java.util.List;
 
-import fr.iban.menuapi.menuitem.ConfigurableItem;
+public final class ShopItem {
 
-public class ShopItem {
-	
-	private final int id;
-	private int price;
-	private int discount;
-	private ConfigurableItem display;
-	private List<String> buyCommands;
-	private ShopCategory category;
-	
-	public ShopItem(int id, ShopCategory category) {
-		this.id = id;
-		this.category = category;
-	}
-	
-	public int getId() {
-		return id;
-	}
-	
-	public int getPrice() {
-		return price;
-	}
-	
-	public void setPrice(int price) {
-		this.price = price;
-	}
-	
-	public int getDiscount() {
-		return discount;
-	}
-	
-	public void setDiscount(int discount) {
-		this.discount = discount;
-	}
-	
-	public ConfigurableItem getDisplay() {
-		return display;
-	}
-	
-	public void setDisplay(ConfigurableItem display) {
-		this.display = display;
-	}
-	
-	public List<String> getBuyCommands() {
-		return buyCommands;
-	}
-	
-	public void setBuyCommands(List<String> buyCommands) {
-		this.buyCommands = buyCommands;
-	}
+    private final String id;
+    private final String name;
+    private final String icon;
+    private final double price;
+    private final int discount;
+    private final List<String> lore;
+    private final List<String> buyCommands;
+    private final ShopCategory category;
 
-	public void setCategory(ShopCategory category) {
-		this.category = category;
-	}
+    public ShopItem(String id, String name, String icon, double price, int discount,
+                     List<String> lore, List<String> buyCommands, ShopCategory category) {
+        this.id = id;
+        this.name = name;
+        this.icon = icon;
+        this.price = price;
+        this.discount = discount;
+        this.lore = lore;
+        this.buyCommands = buyCommands;
+        this.category = category;
+    }
 
-	public ShopCategory getCategory() {
-		return category;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public double getPriceModifier() {
-		int wholeShopDiscount = ShopPlugin.getInstance().getConfig().getInt("whole-shop-discount");
-		return 1.0-((wholeShopDiscount + getCategory().getDiscount() + getDiscount())/100.0);
-	}
+    public String getName() {
+        return name;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public int getDiscount() {
+        return discount;
+    }
+
+    public List<String> getLore() {
+        return lore;
+    }
+
+    public List<String> getBuyCommands() {
+        return buyCommands;
+    }
+
+    public ShopCategory getCategory() {
+        return category;
+    }
+
+    public double finalPrice(int wholeShopDiscount) {
+        double mod = 1.0 - (wholeShopDiscount + category.getDiscount() + discount) / 100.0;
+        return Math.max(0, price * mod);
+    }
 }
