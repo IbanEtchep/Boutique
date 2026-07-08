@@ -13,7 +13,8 @@ import java.util.stream.Stream;
 public final class Bootstrapper {
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml");
+            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml",
+            "lang/fr.yaml");
 
     private Bootstrapper() {}
 

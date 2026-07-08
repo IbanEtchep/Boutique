@@ -2,7 +2,7 @@ schema: menu/v1
 id: shop_main
 title:
   - kind: plain
-    value: { key: "Boutique" }
+    value: { key: "boutique.shop_main.title" }
 size: 54
 context_inputs:
   - name: cats

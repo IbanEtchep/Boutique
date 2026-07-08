@@ -15,7 +15,8 @@ class BootstrapperTest {
 
     private static final List<String> EXPECTED_FILES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml");
+            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml",
+            "lang/fr.yaml");
 
     @Test
     void happyPath_writesAllBundledFiles(@TempDir File projectsDir) throws IOException {

@@ -1,7 +1,7 @@
 schema: manifest/v1
 project_id: boutique_shop
 default_lang: fr
-languages: []
+languages: [fr]
 files:
   menus: [shop_main, shop_category]
   commands: [boutique]
