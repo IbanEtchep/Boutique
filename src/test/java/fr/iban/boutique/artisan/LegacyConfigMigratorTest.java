@@ -53,6 +53,24 @@ class LegacyConfigMigratorTest {
         assertTrue(out.contains("Armes"));
     }
 
+    @Test void identicallyNamedEntriesGetDistinctIds() {
+        String legacy = String.join("\n",
+            "categories:",
+            "  '1':",
+            "    menuitem: { name: 'Divers' }",
+            "    items:",
+            "      '1':",
+            "        price: 10",
+            "        menuitem: { name: '&fPotion' }",
+            "      '2':",
+            "        price: 20",
+            "        menuitem: { name: '&fPotion' }",
+            "");
+        String out = LegacyConfigMigrator.migrate(legacy).orElseThrow();
+        assertTrue(out.contains("id: potion"), out);
+        assertTrue(out.contains("id: potion_2"), out);
+    }
+
     @Test void emptyOrUnparseableConfigYieldsEmpty() {
         assertTrue(LegacyConfigMigrator.migrate("").isEmpty());
         assertTrue(LegacyConfigMigrator.migrate("{{{").isEmpty());

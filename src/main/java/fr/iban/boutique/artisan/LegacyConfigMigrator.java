@@ -18,6 +18,8 @@ public final class LegacyConfigMigrator {
         if (!(root.get("categories") instanceof Map)) return Optional.empty();
 
         List<Map<String, Object>> categories = new ArrayList<>();
+        Set<String> usedCatIds = new HashSet<>();
+        Set<String> usedItemIds = new HashSet<>();
         Map<String, Object> rawCats = (Map<String, Object>) root.get("categories");
         for (Map.Entry<String, Object> catEntry : rawCats.entrySet()) {
             if (!(catEntry.getValue() instanceof Map)) continue;
@@ -35,7 +37,7 @@ public final class LegacyConfigMigrator {
                     Object rawItemDisplay = i.containsKey("menuitem") ? i.get("menuitem") : i.get("display");
                     Map<String, Object> itemDisplay = display(rawItemDisplay);
                     Map<String, Object> item = new LinkedHashMap<>();
-                    item.put("id", slug((String) itemDisplay.get("name"), "item_" + itemEntry.getKey()));
+                    item.put("id", unique(slug((String) itemDisplay.get("name"), "item_" + itemEntry.getKey()), usedItemIds));
                     item.put("name", stripAmp((String) itemDisplay.getOrDefault("name", "item " + itemEntry.getKey())));
                     item.put("icon", itemDisplay.getOrDefault("icon", "BARRIER"));
                     item.put("price", i.getOrDefault("price", 0));
@@ -46,7 +48,7 @@ public final class LegacyConfigMigrator {
                 }
             }
             Map<String, Object> cat = new LinkedHashMap<>();
-            cat.put("id", slug((String) catDisplay.get("name"), "cat_" + catEntry.getKey()));
+            cat.put("id", unique(slug((String) catDisplay.get("name"), "cat_" + catEntry.getKey()), usedCatIds));
             cat.put("name", stripAmp((String) catDisplay.getOrDefault("name", "Catégorie " + catEntry.getKey())));
             cat.put("icon", catDisplay.getOrDefault("icon", "CHEST"));
             cat.put("discount", c.getOrDefault("discount", 0));
@@ -81,6 +83,13 @@ public final class LegacyConfigMigrator {
             }
         }
         return out;
+    }
+
+    /** Slugs identiques (deux entrées de même nom) → suffixe _2, _3… pour garder des ids uniques. */
+    private static String unique(String id, Set<String> used) {
+        String candidate = id;
+        for (int n = 2; !used.add(candidate); n++) candidate = id + "_" + n;
+        return candidate;
     }
 
     private static String stripAmp(String s) { return s == null ? "" : s.replaceAll("[&§][0-9a-fk-orx]", "").trim(); }
