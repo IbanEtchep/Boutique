@@ -1,0 +1,15 @@
+schema: dialog/v1
+id: confirm_purchase
+title: "Confirmer l'achat"
+can_close_with_escape: true
+body:
+  - { type: text, text: "Acheter {item_name} pour {item_price} tokens ?" }
+buttons:
+  - id: confirm
+    label: "§aConfirmer"
+    actions:
+      - { type: run_command, command: "boutique:buy {item_id}" }
+  - id: cancel
+    label: "§cAnnuler"
+    actions:
+      - { type: open_menu, menu_id: shop_category }

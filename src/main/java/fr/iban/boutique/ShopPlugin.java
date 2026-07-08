@@ -1,6 +1,8 @@
 package fr.iban.boutique;
 
 import fr.iban.boutique.artisan.BoutiqueModule;
+import fr.iban.boutique.artisan.Bootstrapper;
+import fr.iban.boutique.artisan.LegacyConfigMigrator;
 import fr.iban.boutique.artisan.ShopRepo;
 import fr.iban.boutique.commands.TokensCMD;
 import fr.iban.boutique.listener.JoinQuitListener;
@@ -13,8 +15,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class ShopPlugin extends JavaPlugin {
@@ -55,6 +61,22 @@ public final class ShopPlugin extends JavaPlugin {
         var api = reg.getProvider();
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
+
+        if (!api.getProject().hasContent("boutique")) {
+            try {
+                Optional<String> migrated = Optional.empty();
+                File legacy = new File(getDataFolder(), "config.yml");
+                if (legacy.exists()) migrated = LegacyConfigMigrator.migrate(Files.readString(legacy.toPath()));
+                File projectsDir = new File(api.getPlugin().getDataFolder(), "projects");
+                if (Bootstrapper.bootstrapIfAbsent(projectsDir, migrated)) {
+                    getLogger().warning("Contenu Boutique bootstrappé dans projects/boutique_shop"
+                            + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
+                            + " — /artisan reload puis /artisan pushLocal boutique_shop pour synchroniser.");
+                }
+            } catch (IOException e) {
+                getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
+            }
+        }
     }
 
     @Override

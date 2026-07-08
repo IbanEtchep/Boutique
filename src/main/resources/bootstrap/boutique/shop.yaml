@@ -1,0 +1,14 @@
+schema: boutique/v1
+whole_shop_discount: 0
+categories:
+  - id: weapons
+    name: Armes
+    icon: DIAMOND_SWORD
+    discount: 0
+    items:
+      - id: diamond_sword
+        name: Épée en diamant
+        icon: DIAMOND_SWORD
+        price: 100
+        discount: 0
+        buy_commands: ["give %player% diamond_sword 1"]
