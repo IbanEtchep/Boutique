@@ -1,5 +1,7 @@
 package fr.iban.boutique;
 
+import fr.iban.boutique.artisan.BoutiqueModule;
+import fr.iban.boutique.artisan.ShopRepo;
 import fr.iban.boutique.commands.TokensCMD;
 import fr.iban.boutique.listener.JoinQuitListener;
 import fr.iban.boutique.manager.DatabaseManager;
@@ -19,6 +21,7 @@ public final class ShopPlugin extends JavaPlugin {
 
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
+    private ShopRepo shopRepo;
     private static ShopPlugin instance;
     private final Map<UUID, Integer> tokensCache = new HashMap<>();
 
@@ -42,6 +45,16 @@ public final class ShopPlugin extends JavaPlugin {
         if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new ShopPlaceHolders(this).register();
         }
+
+        var reg = getServer().getServicesManager().getRegistration(net.artisanmc.modules.api.ArtisanAPI.class);
+        if (reg == null) {
+            getLogger().severe("Artisan introuvable — Boutique désactivée.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        var api = reg.getProvider();
+        this.shopRepo = new ShopRepo();
+        api.getModules().register(new BoutiqueModule(this, shopRepo));
     }
 
     @Override
