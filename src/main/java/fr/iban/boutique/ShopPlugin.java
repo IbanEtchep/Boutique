@@ -35,6 +35,23 @@ public final class ShopPlugin extends JavaPlugin {
     public void onEnable() {
         instance = this;
         boolean hadLegacyConfig = new File(getDataFolder(), "config.yml").exists();
+        // Un config legacy contient des blocs sérialisés MenuAPI (`==: menuitem`) que
+        // YamlConfiguration ne peut plus désérialiser — il faut capturer le texte brut
+        // (pour le migrateur) et assainir le fichier AVANT le premier getConfig().
+        String legacyRaw = null;
+        if (hadLegacyConfig) {
+            try {
+                File configFile = new File(getDataFolder(), "config.yml");
+                legacyRaw = Files.readString(configFile.toPath());
+                if (legacyRaw.contains("==:")) {
+                    Files.writeString(new File(getDataFolder(), "config.yml.legacy").toPath(), legacyRaw);
+                    Files.writeString(configFile.toPath(), LegacyConfigMigrator.stripCategoriesBlock(legacyRaw));
+                    getLogger().warning("config.yml contenait des blocs MenuAPI sérialisés — original sauvegardé dans config.yml.legacy, bloc categories retiré (le catalogue est migré vers le project Artisan).");
+                }
+            } catch (IOException e) {
+                getLogger().log(java.util.logging.Level.SEVERE, "Lecture/assainissement de config.yml impossible.", e);
+            }
+        }
         saveDefaultConfig();
         try {
             DbAccess.initPool(new DbCredentials(getConfig().getString("database.host"), getConfig().getString("database.user"), getConfig().getString("database.password"), getConfig().getString("database.dbname"), getConfig().getInt("database.port")));
@@ -65,11 +82,11 @@ public final class ShopPlugin extends JavaPlugin {
 
         if (!api.getProject().hasContent("boutique")) {
             try {
-                Optional<String> migrated = Optional.empty();
-                if (hadLegacyConfig) {
-                    File legacy = new File(getDataFolder(), "config.yml");
-                    migrated = LegacyConfigMigrator.migrate(Files.readString(legacy.toPath()));
-                }
+                // Migration depuis le texte brut capturé AVANT assainissement (le
+                // config.yml sur disque n'a plus son bloc categories à ce stade).
+                Optional<String> migrated = (hadLegacyConfig && legacyRaw != null)
+                        ? LegacyConfigMigrator.migrate(legacyRaw)
+                        : Optional.empty();
                 File projectsDir = new File(api.getPlugin().getDataFolder(), "projects");
                 if (Bootstrapper.bootstrapIfAbsent(projectsDir, migrated)) {
                     getLogger().warning("Contenu Boutique bootstrappé dans projects/boutique_shop"

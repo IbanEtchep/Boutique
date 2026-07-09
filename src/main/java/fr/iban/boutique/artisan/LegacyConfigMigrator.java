@@ -9,6 +9,28 @@ import java.util.*;
 public final class LegacyConfigMigrator {
     private LegacyConfigMigrator() {}
 
+    /**
+     * Retire le bloc top-level `categories:` d'un config.yml legacy. Nécessaire AVANT le premier
+     * {@code getConfig()} Bukkit : les blocs sérialisés `==: menuitem` ne se désérialisent plus
+     * (MenuAPI absent) et font échouer YamlConfiguration — le catalogue est migré vers Artisan,
+     * le reste du config (database, messages…) doit rester lisible.
+     */
+    public static String stripCategoriesBlock(String yaml) {
+        StringBuilder out = new StringBuilder();
+        boolean skipping = false;
+        for (String line : yaml.split("\n", -1)) {
+            if (line.startsWith("categories:")) { skipping = true; continue; }
+            if (skipping) {
+                boolean topLevel = !line.isEmpty() && !Character.isWhitespace(line.charAt(0)) && !line.startsWith("#");
+                if (!topLevel) continue;
+                skipping = false;
+            }
+            out.append(line).append('\n');
+        }
+        // split(-1) + append('\n') ajoute un \n final de trop si l'entrée n'en avait pas — sans conséquence YAML.
+        return out.toString();
+    }
+
     @SuppressWarnings("unchecked")
     public static Optional<String> migrate(String legacyYaml) {
         Object parsed;

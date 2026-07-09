@@ -71,6 +71,39 @@ class LegacyConfigMigratorTest {
         assertTrue(out.contains("id: potion_2"), out);
     }
 
+    @Test void stripCategoriesBlockRemovesOnlyThatBlock() {
+        String yaml = String.join("\n",
+            "#Azuriom database",
+            "database:",
+            "  host: localhost",
+            "  port: 3306",
+            "categories:",
+            "  '1':",
+            "    menuitem:",
+            "      ==: menuitem",
+            "      name: '&cname'",
+            "",
+            "  '2':",
+            "    discount: 0",
+            "whole-shop-discount: 5",
+            "messages:",
+            "  currency-name: tokens",
+            "");
+        String out = LegacyConfigMigrator.stripCategoriesBlock(yaml);
+        assertFalse(out.contains("categories:"), out);
+        assertFalse(out.contains("==:"), out);
+        assertTrue(out.contains("host: localhost"), out);
+        assertTrue(out.contains("whole-shop-discount: 5"), out);
+        assertTrue(out.contains("currency-name: tokens"), out);
+    }
+
+    @Test void stripCategoriesBlockAtEndOfFile() {
+        String yaml = "database:\n  host: h\ncategories:\n  '1':\n    menuitem:\n      ==: menuitem\n";
+        String out = LegacyConfigMigrator.stripCategoriesBlock(yaml);
+        assertFalse(out.contains("categories:"));
+        assertTrue(out.contains("host: h"));
+    }
+
     @Test void emptyOrUnparseableConfigYieldsEmpty() {
         assertTrue(LegacyConfigMigrator.migrate("").isEmpty());
         assertTrue(LegacyConfigMigrator.migrate("{{{").isEmpty());
