@@ -39,7 +39,7 @@ public final class ShopPlugin extends JavaPlugin {
         try {
             DbAccess.initPool(new DbCredentials(getConfig().getString("database.host"), getConfig().getString("database.user"), getConfig().getString("database.password"), getConfig().getString("database.dbname"), getConfig().getInt("database.port")));
         }catch (Exception e) {
-            getLogger().severe("Erreur lors de l'initialisation de la connexion sql.");
+            getLogger().log(java.util.logging.Level.SEVERE, "Erreur lors de l'initialisation de la connexion sql.", e);
             //Bukkit.shutdown();
         }
         this.databaseManager = new DatabaseManager(this);
