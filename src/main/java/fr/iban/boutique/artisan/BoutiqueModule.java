@@ -20,19 +20,38 @@ public final class BoutiqueModule implements ArtisanModule {
     @Override public void onEnable(ArtisanAPI api) {
         this.api = api;
         reloadRepo();
+        // Both sources are STATIC: a stable, enumerable key-set (categories/items
+        // keyed by `id`), so they're placeable in the editor's placement mode.
+        // Field values (e.g. final_price) may still resolve per-player at runtime.
         api.getDataSources().register(new DataSourceDeclaration(
                 "boutique:categories",
                 (player, params) -> repo.categories().stream()
                         .map(c -> Map.<String, Object>of("id", c.getId(), "name", c.getName(), "icon", c.getIcon()))
                         .collect(Collectors.toList()),
-                "id, name, icon"));
+                List.of(
+                        new DataSourceField("id", FieldKind.STRING, null),
+                        new DataSourceField("name", FieldKind.STRING, null),
+                        new DataSourceField("icon", FieldKind.STRING, null)),
+                null,
+                Stability.STATIC,
+                "id"));
         api.getDataSources().register(new DataSourceDeclaration(
                 "boutique:items",
                 (player, params) -> repo.categories().stream()
                         .flatMap(c -> c.getItems().stream())
                         .map(this::itemRow)
                         .collect(Collectors.toList()),
-                "id, name, icon, category, price, final_price, lore"));
+                List.of(
+                        new DataSourceField("id", FieldKind.STRING, null),
+                        new DataSourceField("name", FieldKind.STRING, null),
+                        new DataSourceField("icon", FieldKind.STRING, null),
+                        new DataSourceField("category", FieldKind.STRING, null),
+                        new DataSourceField("price", FieldKind.NUMBER, null),
+                        new DataSourceField("final_price", FieldKind.INTEGER, null),
+                        new DataSourceField("lore", FieldKind.STRING, null)),
+                null,
+                Stability.STATIC,
+                "id"));
         api.getCommands().register(new CommandDeclaration("boutique:buy", (player, args) -> {
             handleBuy(player, args);
             return kotlin.Unit.INSTANCE;
