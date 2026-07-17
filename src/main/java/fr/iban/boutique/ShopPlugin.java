@@ -79,6 +79,7 @@ public final class ShopPlugin extends JavaPlugin {
         var api = reg.getProvider();
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
+        getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api));
 
         if (!api.getProject().hasContent("boutique")) {
             try {
