@@ -66,11 +66,15 @@ class BootstrapperTest {
     }
 
     @Test
-    void migratedShopYaml_isUsedInsteadOfBundledResource(@TempDir File projectsDir) throws IOException {
-        String migrated = "categories: []\n";
-        Bootstrapper.bootstrapIfAbsent(projectsDir, Optional.of(migrated));
+    void migratedFiles_overrideBundledAndAddCapturedItems(@TempDir File projectsDir) throws IOException {
+        String shop = "categories: []\n";
+        String stack = "item:\n  '==': org.bukkit.inventory.ItemStack\n  type: DIAMOND_SWORD\n";
+        Bootstrapper.bootstrapIfAbsent(projectsDir,
+                Optional.of(java.util.Map.of("boutique/shop.yaml", shop, "items/ci_sword.yml", stack)));
 
-        File shopYaml = new File(projectsDir, "boutique_shop/boutique/shop.yaml");
-        assertEquals(migrated, Files.readString(shopYaml.toPath()));
+        File projectDir = new File(projectsDir, "boutique_shop");
+        assertEquals(shop, Files.readString(new File(projectDir, "boutique/shop.yaml").toPath()));
+        // Les fichiers migrés hors ressources bundlées (items capturés) sont écrits aussi.
+        assertEquals(stack, Files.readString(new File(projectDir, "items/ci_sword.yml").toPath()));
     }
 }

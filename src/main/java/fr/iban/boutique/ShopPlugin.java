@@ -87,7 +87,7 @@ public final class ShopPlugin extends JavaPlugin {
             try {
                 // Migration depuis le texte brut capturé AVANT assainissement (le
                 // config.yml sur disque n'a plus son bloc categories à ce stade).
-                Optional<String> migrated = (hadLegacyConfig && legacyRaw != null)
+                Optional<java.util.Map<String, String>> migrated = (hadLegacyConfig && legacyRaw != null)
                         ? LegacyConfigMigrator.migrate(legacyRaw)
                         : Optional.empty();
                 File projectsDir = new File(api.getPlugin().getDataFolder(), "projects");

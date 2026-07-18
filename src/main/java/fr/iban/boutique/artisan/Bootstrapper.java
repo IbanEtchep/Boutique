@@ -26,25 +26,33 @@ public final class Bootstrapper {
      * un {@code boutique_shop/} à moitié rempli qui bloquerait tout retry futur (guard
      * {@code projectDir.exists()}).
      */
-    public static boolean bootstrapIfAbsent(File projectsDir, Optional<String> migratedShopYaml) throws IOException {
+    public static boolean bootstrapIfAbsent(File projectsDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {
         File projectDir = new File(projectsDir, "boutique_shop");
         if (projectDir.exists()) return false;
 
         File tmpDir = new File(projectsDir, ".boutique_shop.tmp");
         if (tmpDir.exists()) deleteRecursively(tmpDir);
 
+        java.util.Map<String, String> migrated = migratedFiles.orElse(java.util.Map.of());
         try {
             for (String res : RESOURCES) {
                 File target = new File(tmpDir, res);
                 Files.createDirectories(target.getParentFile().toPath());
-                if (res.equals("boutique/shop.yaml") && migratedShopYaml.isPresent()) {
-                    Files.writeString(target.toPath(), migratedShopYaml.get());
+                if (migrated.containsKey(res)) {
+                    Files.writeString(target.toPath(), migrated.get(res));
                 } else {
                     try (InputStream in = Bootstrapper.class.getResourceAsStream("/bootstrap/" + res)) {
                         if (in == null) throw new IOException("Missing bundled resource /bootstrap/" + res);
                         Files.write(target.toPath(), in.readAllBytes());
                     }
                 }
+            }
+            // Fichiers migrés hors ressources bundlées (items/ci_*.yml des stacks capturés).
+            for (var entry : migrated.entrySet()) {
+                if (RESOURCES.contains(entry.getKey())) continue;
+                File target = new File(tmpDir, entry.getKey());
+                Files.createDirectories(target.getParentFile().toPath());
+                Files.writeString(target.toPath(), entry.getValue());
             }
             Files.createDirectories(projectsDir.toPath());
             Files.move(tmpDir.toPath(), projectDir.toPath());

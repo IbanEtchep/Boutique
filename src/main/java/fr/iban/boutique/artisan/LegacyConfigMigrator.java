@@ -31,14 +31,23 @@ public final class LegacyConfigMigrator {
         return out.toString();
     }
 
+    /**
+     * @return relPath → contenu : {@code boutique/shop.yaml} + un
+     * {@code items/ci_<id>.yml} par stack sérialisé capturé (le stack legacy
+     * est la vérité runtime — émis verbatim sous la clé racine {@code item:},
+     * avec un bloc {@code display:} portant les flags legacy comme
+     * {@code enchanted} que le stack seul ne dit pas). Les icônes deviennent
+     * des refs universelles {@code item:ci_<id>}.
+     */
     @SuppressWarnings("unchecked")
-    public static Optional<String> migrate(String legacyYaml) {
+    public static Optional<Map<String, String>> migrate(String legacyYaml) {
         Object parsed;
         try { parsed = new Yaml().load(legacyYaml); } catch (RuntimeException e) { return Optional.empty(); }
         if (!(parsed instanceof Map)) return Optional.empty();
         Map<String, Object> root = (Map<String, Object>) parsed;
         if (!(root.get("categories") instanceof Map)) return Optional.empty();
 
+        Map<String, String> files = new LinkedHashMap<>();
         List<Map<String, Object>> categories = new ArrayList<>();
         Set<String> usedCatIds = new HashSet<>();
         Set<String> usedItemIds = new HashSet<>();
@@ -47,6 +56,7 @@ public final class LegacyConfigMigrator {
             if (!(catEntry.getValue() instanceof Map)) continue;
             Map<String, Object> c = (Map<String, Object>) catEntry.getValue();
             Map<String, Object> catDisplay = display(c.get("menuitem"));
+            String catId = unique(slug((String) catDisplay.get("name"), "cat_" + catEntry.getKey()), usedCatIds);
             List<Map<String, Object>> items = new ArrayList<>();
             Object rawItems = c.get("items");
             if (rawItems instanceof Map) {
@@ -58,10 +68,12 @@ public final class LegacyConfigMigrator {
                     // main depuis le template ressource (qui, lui, utilisait "display").
                     Object rawItemDisplay = i.containsKey("menuitem") ? i.get("menuitem") : i.get("display");
                     Map<String, Object> itemDisplay = display(rawItemDisplay);
+                    String itemId = unique(slug((String) itemDisplay.get("name"), "item_" + itemEntry.getKey()), usedItemIds);
                     Map<String, Object> item = new LinkedHashMap<>();
-                    item.put("id", unique(slug((String) itemDisplay.get("name"), "item_" + itemEntry.getKey()), usedItemIds));
+                    item.put("id", itemId);
                     item.put("name", stripAmp((String) itemDisplay.getOrDefault("name", "item " + itemEntry.getKey())));
-                    item.put("icon", itemDisplay.getOrDefault("icon", "BARRIER"));
+                    item.put("icon", captureStack(rawItemDisplay, "ci_" + itemId,
+                            (String) itemDisplay.getOrDefault("icon", "BARRIER"), files));
                     item.put("price", i.getOrDefault("price", 0));
                     item.put("discount", i.getOrDefault("discount", 0));
                     item.put("lore", itemDisplay.getOrDefault("lore", List.of()));
@@ -70,9 +82,10 @@ public final class LegacyConfigMigrator {
                 }
             }
             Map<String, Object> cat = new LinkedHashMap<>();
-            cat.put("id", unique(slug((String) catDisplay.get("name"), "cat_" + catEntry.getKey()), usedCatIds));
+            cat.put("id", catId);
             cat.put("name", stripAmp((String) catDisplay.getOrDefault("name", "Catégorie " + catEntry.getKey())));
-            cat.put("icon", catDisplay.getOrDefault("icon", "CHEST"));
+            cat.put("icon", captureStack(c.get("menuitem"), "ci_" + catId,
+                    (String) catDisplay.getOrDefault("icon", "CHEST"), files));
             cat.put("discount", c.getOrDefault("discount", 0));
             cat.put("items", items);
             categories.add(cat);
@@ -83,9 +96,43 @@ public final class LegacyConfigMigrator {
         out.put("schema", "boutique/v1");
         out.put("whole_shop_discount", root.getOrDefault("whole-shop-discount", 0));
         out.put("categories", categories);
+        files.put("boutique/shop.yaml", blockYaml().dump(out));
+        return Optional.of(files);
+    }
+
+    /**
+     * Capture le stack sérialisé d'un bloc menuitem legacy dans
+     * {@code items/ci_<id>.yml} (racine canonique {@code item:} + bloc
+     * {@code display:} avec le nom nettoyé et le flag {@code enchanted}
+     * legacy) et renvoie la ref {@code item:ci_<id>}. Sans stack sérialisé,
+     * renvoie {@code fallbackIcon} (comportement historique).
+     */
+    @SuppressWarnings("unchecked")
+    private static String captureStack(Object rawMenuItem, String ciId, String fallbackIcon,
+                                       Map<String, String> files) {
+        if (!(rawMenuItem instanceof Map)) return fallbackIcon;
+        Map<String, Object> m = (Map<String, Object>) rawMenuItem;
+        if (!(m.get("item") instanceof Map)) return fallbackIcon;
+        Map<String, Object> stack = (Map<String, Object>) m.get("item");
+        // Ancien format (item: {type: DIAMOND_SWORD}) : pas un vrai stack
+        // sérialisé — garder le material simple, pas de capture.
+        if (!stack.containsKey("==")) return fallbackIcon;
+
+        Map<String, Object> displayBlock = new LinkedHashMap<>();
+        if (m.get("name") != null) displayBlock.put("name", stripAmp(m.get("name").toString()));
+        if (Boolean.TRUE.equals(m.get("enchanted"))) displayBlock.put("enchanted", true);
+
+        Map<String, Object> file = new LinkedHashMap<>();
+        file.put("item", stack);
+        if (!displayBlock.isEmpty()) file.put("display", displayBlock);
+        files.put("items/" + ciId + ".yml", blockYaml().dump(file));
+        return "item:" + ciId;
+    }
+
+    private static Yaml blockYaml() {
         DumperOptions opts = new DumperOptions();
         opts.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        return Optional.of(new Yaml(opts).dump(out));
+        return new Yaml(opts);
     }
 
     /** name/lore/icon depuis un bloc menuitem sérialisé ({==: menuitem, name, lore, item: {type}}). */

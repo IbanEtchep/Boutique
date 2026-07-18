@@ -43,10 +43,10 @@ class LegacyConfigMigratorTest {
         "");
 
     @Test void migratesCategoriesItemsPricesAndStripsColorCodes() {
-        String out = LegacyConfigMigrator.migrate(LEGACY).orElseThrow();
+        var files = LegacyConfigMigrator.migrate(LEGACY).orElseThrow();
+        String out = files.get("boutique/shop.yaml");
         assertTrue(out.contains("schema: boutique/v1"));
         assertTrue(out.contains("whole_shop_discount: 5"));
-        assertTrue(out.contains("icon: DIAMOND_SWORD"));
         assertTrue(out.contains("price: 100"));
         // buycommands → steps `actions` (run_command console, %player% → {player})
         assertTrue(out.contains("actions:"));
@@ -54,6 +54,21 @@ class LegacyConfigMigratorTest {
         assertTrue(out.contains("give {player} diamond_sword 1"));
         // Les noms gardent leurs codes couleur legacy (& → rendu MiniMessage viendra plus tard) :
         assertTrue(out.contains("Armes"));
+    }
+
+    @Test void capturesSerializedStacksAsItemFilesAndItemRefs() {
+        var files = LegacyConfigMigrator.migrate(LEGACY).orElseThrow();
+        String out = files.get("boutique/shop.yaml");
+        // Le stack sérialisé devient un item capturé, référencé en icon universel.
+        assertTrue(out.contains("icon: item:ci_armes"), out);
+        assertTrue(out.contains("icon: item:ci_epee_en_diamant"), out);
+        String captured = files.get("items/ci_epee_en_diamant.yml");
+        assertNotNull(captured, String.valueOf(files.keySet()));
+        assertTrue(captured.contains("item:"), captured);
+        assertTrue(captured.contains("==: org.bukkit.inventory.ItemStack"), captured);
+        assertTrue(captured.contains("type: DIAMOND_SWORD"), captured);
+        // Les flags legacy que le stack seul ne dit pas voyagent en bloc display:.
+        assertTrue(captured.contains("name: Épée en diamant"), captured);
     }
 
     @Test void identicallyNamedEntriesGetDistinctIds() {
@@ -69,9 +84,11 @@ class LegacyConfigMigratorTest {
             "        price: 20",
             "        menuitem: { name: '&fPotion' }",
             "");
-        String out = LegacyConfigMigrator.migrate(legacy).orElseThrow();
+        String out = LegacyConfigMigrator.migrate(legacy).orElseThrow().get("boutique/shop.yaml");
         assertTrue(out.contains("id: potion"), out);
         assertTrue(out.contains("id: potion_2"), out);
+        // Pas de stack sérialisé → pas de capture, icônes fallback.
+        assertTrue(out.contains("icon: BARRIER"), out);
     }
 
     @Test void stripCategoriesBlockRemovesOnlyThatBlock() {
