@@ -65,7 +65,7 @@ public final class LegacyConfigMigrator {
                     item.put("price", i.getOrDefault("price", 0));
                     item.put("discount", i.getOrDefault("discount", 0));
                     item.put("lore", itemDisplay.getOrDefault("lore", List.of()));
-                    item.put("buy_commands", i.getOrDefault("buycommands", List.of()));
+                    item.put("actions", migrateCommands(i.getOrDefault("buycommands", List.of())));
                     items.add(item);
                 }
             }
@@ -102,6 +102,26 @@ public final class LegacyConfigMigrator {
             }
             if (m.get("item") instanceof Map && ((Map<String, Object>) m.get("item")).get("type") != null) {
                 out.put("icon", ((Map<String, Object>) m.get("item")).get("type").toString());
+            }
+        }
+        return out;
+    }
+
+    /** buycommands legacy → arbre de steps `actions` (run_command console,
+     *  `%player%` → `{player}` — placeholder du moteur de steps Artisan). */
+    private static List<Map<String, Object>> migrateCommands(Object raw) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (raw instanceof List<?> list) {
+            for (Object o : list) {
+                if (o == null) continue;
+                Map<String, Object> action = new LinkedHashMap<>();
+                action.put("type", "run_command");
+                action.put("command", o.toString().replace("%player%", "{player}"));
+                action.put("as", "console");
+                Map<String, Object> step = new LinkedHashMap<>();
+                step.put("kind", "action");
+                step.put("action", action);
+                out.add(step);
             }
         }
         return out;

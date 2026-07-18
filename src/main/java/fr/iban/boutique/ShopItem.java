@@ -1,6 +1,7 @@
 package fr.iban.boutique;
 
 import java.util.List;
+import java.util.Map;
 
 public final class ShopItem {
 
@@ -10,18 +11,19 @@ public final class ShopItem {
     private final double price;
     private final int discount;
     private final List<String> lore;
-    private final List<String> buyCommands;
+    /** Arbre de steps d'achat (forme wire du widget `actions`, texte littéral). */
+    private final List<Map<String, Object>> actions;
     private final ShopCategory category;
 
     public ShopItem(String id, String name, String icon, double price, int discount,
-                     List<String> lore, List<String> buyCommands, ShopCategory category) {
+                     List<String> lore, List<Map<String, Object>> actions, ShopCategory category) {
         this.id = id;
         this.name = name;
         this.icon = icon;
         this.price = price;
         this.discount = discount;
         this.lore = lore;
-        this.buyCommands = buyCommands;
+        this.actions = actions;
         this.category = category;
     }
 
@@ -49,8 +51,8 @@ public final class ShopItem {
         return lore;
     }
 
-    public List<String> getBuyCommands() {
-        return buyCommands;
+    public List<Map<String, Object>> getActions() {
+        return actions;
     }
 
     public ShopCategory getCategory() {

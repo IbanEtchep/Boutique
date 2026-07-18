@@ -8,7 +8,7 @@ class ShopItemTest {
     private ShopItem item(int catDiscount, int itemDiscount, double price) {
         ShopCategory cat = new ShopCategory("weapons", "Armes", "DIAMOND_SWORD", catDiscount, new java.util.ArrayList<>());
         return new ShopItem("sword", "Épée", "DIAMOND_SWORD", price, itemDiscount,
-                List.of(), List.of("give %player% diamond_sword 1"), cat);
+                List.of(), List.of(), cat);
     }
 
     @Test void finalPriceStacksWholeShopCategoryAndItemDiscounts() {

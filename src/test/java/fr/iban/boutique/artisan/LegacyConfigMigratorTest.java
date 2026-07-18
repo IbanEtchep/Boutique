@@ -48,7 +48,10 @@ class LegacyConfigMigratorTest {
         assertTrue(out.contains("whole_shop_discount: 5"));
         assertTrue(out.contains("icon: DIAMOND_SWORD"));
         assertTrue(out.contains("price: 100"));
-        assertTrue(out.contains("give %player% diamond_sword 1"));
+        // buycommands → steps `actions` (run_command console, %player% → {player})
+        assertTrue(out.contains("actions:"));
+        assertTrue(out.contains("type: run_command"));
+        assertTrue(out.contains("give {player} diamond_sword 1"));
         // Les noms gardent leurs codes couleur legacy (& → rendu MiniMessage viendra plus tard) :
         assertTrue(out.contains("Armes"));
     }

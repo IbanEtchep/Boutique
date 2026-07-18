@@ -45,7 +45,7 @@ public final class ShopRepo {
                     ShopItem item = new ShopItem(
                             str(i, "id"), str(i, "name"), str(i, "icon"),
                             asDouble(i.get("price")), asInt(i.get("discount"), 0),
-                            strList(i.get("lore")), strList(i.get("buy_commands")), cat);
+                            strList(i.get("lore")), actionsOf(i), cat);
                     items.add(item);
                     byId.put(item.getId(), item);
                 }
@@ -55,6 +55,29 @@ public final class ShopRepo {
         this.categories = List.copyOf(cats);
         this.itemsById = Map.copyOf(byId);
         this.wholeShopDiscount = shopDiscount;
+    }
+
+    /** `actions` (arbre de steps wire) si présent, sinon migration mécanique des
+     *  `buy_commands` legacy : une step run_command console par commande,
+     *  `%player%` → `{player}` (placeholder du moteur de steps Artisan). */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> actionsOf(Map<String, Object> i) {
+        Object raw = i.get("actions");
+        if (raw instanceof List<?> list && !list.isEmpty()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            for (Object o : list) if (o instanceof Map) out.add((Map<String, Object>) o);
+            return List.copyOf(out);
+        }
+        List<Map<String, Object>> migrated = new ArrayList<>();
+        for (String cmd : strList(i.get("buy_commands"))) {
+            migrated.add(Map.of(
+                    "kind", "action",
+                    "action", Map.of(
+                            "type", "run_command",
+                            "command", cmd.replace("%player%", "{player}"),
+                            "as", "console")));
+        }
+        return List.copyOf(migrated);
     }
 
     private static String str(Map<String, Object> m, String k) { Object v = m.get(k); return v == null ? "" : v.toString(); }

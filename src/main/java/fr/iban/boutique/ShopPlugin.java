@@ -28,6 +28,7 @@ public final class ShopPlugin extends JavaPlugin {
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private ShopRepo shopRepo;
+    private net.artisanmc.modules.api.ArtisanAPI artisanApi;
     private static ShopPlugin instance;
     private final Map<UUID, Integer> tokensCache = new HashMap<>();
 
@@ -77,6 +78,7 @@ public final class ShopPlugin extends JavaPlugin {
             return;
         }
         var api = reg.getProvider();
+        this.artisanApi = api;
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
         getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api));
@@ -114,6 +116,10 @@ public final class ShopPlugin extends JavaPlugin {
 
     public static ShopPlugin getInstance() {
         return instance;
+    }
+
+    public net.artisanmc.modules.api.ArtisanAPI getArtisanApi() {
+        return artisanApi;
     }
 
     public TransactionManager getTransactionManager() {
