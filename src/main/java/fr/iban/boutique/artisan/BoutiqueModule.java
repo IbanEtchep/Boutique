@@ -26,12 +26,13 @@ public final class BoutiqueModule implements ArtisanModule {
         api.getDataSources().register(new DataSourceDeclaration(
                 "boutique:categories",
                 (player, params) -> repo.categories().stream()
-                        .map(c -> Map.<String, Object>of("id", c.getId(), "name", c.getName(), "icon", c.getIcon()))
+                        .map(this::categoryRow)
                         .collect(Collectors.toList()),
                 List.of(
                         new DataSourceField("id", FieldKind.STRING, null),
                         new DataSourceField("name", FieldKind.STRING, null),
-                        new DataSourceField("icon", FieldKind.STRING, null)),
+                        new DataSourceField("icon", FieldKind.STRING, null),
+                        new DataSourceField("items", FieldKind.LIST, null)),
                 null,
                 Stability.STATIC,
                 "id"));
@@ -56,6 +57,18 @@ public final class BoutiqueModule implements ArtisanModule {
             handleBuy(player, args);
             return kotlin.Unit.INSTANCE;
         }));
+    }
+
+    /** Ligne categorie avec ses items IMBRIQUES - permet aussi bien le join
+     *  plat (boutique:items + filtre {category.id}) que la pagination pointee
+     *  (contexte `category: {cat}` -> `iterates.source: category.items`). */
+    private Map<String, Object> categoryRow(fr.iban.boutique.ShopCategory c) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", c.getId());
+        row.put("name", c.getName());
+        row.put("icon", c.getIcon());
+        row.put("items", c.getItems().stream().map(this::itemRow).collect(Collectors.toList()));
+        return row;
     }
 
     private Map<String, Object> itemRow(fr.iban.boutique.ShopItem i) {
