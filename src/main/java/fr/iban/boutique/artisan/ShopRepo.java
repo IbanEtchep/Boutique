@@ -57,27 +57,19 @@ public final class ShopRepo {
         this.wholeShopDiscount = shopDiscount;
     }
 
-    /** `actions` (arbre de steps wire) si présent, sinon migration mécanique des
-     *  `buy_commands` legacy : une step run_command console par commande,
-     *  `%player%` → `{player}` (placeholder du moteur de steps Artisan). */
-    @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> actionsOf(Map<String, Object> i) {
+    /** `actions` (chaîne Action DSL) si présent, sinon migration mécanique des
+     *  `buy_commands` legacy : une ligne `run_command "…" as console` par commande,
+     *  `%player%` → `{player}` (placeholder du moteur de steps Artisan), jointes par
+     *  des retours ligne. */
+    private static String actionsOf(Map<String, Object> i) {
         Object raw = i.get("actions");
-        if (raw instanceof List<?> list && !list.isEmpty()) {
-            List<Map<String, Object>> out = new ArrayList<>();
-            for (Object o : list) if (o instanceof Map) out.add((Map<String, Object>) o);
-            return List.copyOf(out);
-        }
-        List<Map<String, Object>> migrated = new ArrayList<>();
+        if (raw instanceof String s && !s.isBlank()) return s;
+        StringBuilder sb = new StringBuilder();
         for (String cmd : strList(i.get("buy_commands"))) {
-            migrated.add(Map.of(
-                    "kind", "action",
-                    "action", Map.of(
-                            "type", "run_command",
-                            "command", cmd.replace("%player%", "{player}"),
-                            "as", "console")));
+            if (sb.length() > 0) sb.append('\n');
+            sb.append("run_command \"").append(cmd.replace("%player%", "{player}")).append("\" as console");
         }
-        return List.copyOf(migrated);
+        return sb.toString();
     }
 
     private static String str(Map<String, Object> m, String k) { Object v = m.get(k); return v == null ? "" : v.toString(); }

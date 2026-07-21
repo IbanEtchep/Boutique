@@ -17,14 +17,14 @@ public class TransactionManager {
     }
 
     public void buy(Player player, ShopItem item, int wholeShopDiscount) {
-        if (item.getActions().isEmpty()) {
+        if (item.getActions().isBlank()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.no-buy-commands")));
             return;
         }
         databaseManager.getTokensAsync(player.getUniqueId()).thenAccept(money -> Bukkit.getScheduler().runTask(plugin, () -> {
             int price = (int) Math.round(item.finalPrice(wholeShopDiscount));
             if (money >= price) {
-                // L'arbre de steps de l'item (conditions, messages, commandes…)
+                // La chaîne Action DSL de l'item (conditions, messages, commandes…)
                 // s'exécute via le moteur d'actions Artisan, main-thread.
                 plugin.getArtisanApi().getActions().execute(player, item.getActions(), java.util.Map.of());
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));

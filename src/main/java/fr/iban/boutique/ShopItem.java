@@ -1,7 +1,6 @@
 package fr.iban.boutique;
 
 import java.util.List;
-import java.util.Map;
 
 public final class ShopItem {
 
@@ -11,12 +10,12 @@ public final class ShopItem {
     private final double price;
     private final int discount;
     private final List<String> lore;
-    /** Arbre de steps d'achat (forme wire du widget `actions`, texte littéral). */
-    private final List<Map<String, Object>> actions;
+    /** Actions d'achat en **Action DSL** (le wire du champ `actions`, texte littéral — cf. ADR action-dsl). */
+    private final String actions;
     private final ShopCategory category;
 
     public ShopItem(String id, String name, String icon, double price, int discount,
-                     List<String> lore, List<Map<String, Object>> actions, ShopCategory category) {
+                     List<String> lore, String actions, ShopCategory category) {
         this.id = id;
         this.name = name;
         this.icon = icon;
@@ -51,7 +50,7 @@ public final class ShopItem {
         return lore;
     }
 
-    public List<Map<String, Object>> getActions() {
+    public String getActions() {
         return actions;
     }
 

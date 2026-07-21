@@ -154,24 +154,21 @@ public final class LegacyConfigMigrator {
         return out;
     }
 
-    /** buycommands legacy → arbre de steps `actions` (run_command console,
-     *  `%player%` → `{player}` — placeholder du moteur de steps Artisan). */
-    private static List<Map<String, Object>> migrateCommands(Object raw) {
-        List<Map<String, Object>> out = new ArrayList<>();
+    /** buycommands legacy → chaîne Action DSL `actions` : une ligne
+     *  `run_command "…" as console` par commande, `%player%` → `{player}`
+     *  (placeholder du moteur de steps Artisan), jointes par des retours ligne. */
+    private static String migrateCommands(Object raw) {
+        StringBuilder sb = new StringBuilder();
         if (raw instanceof List<?> list) {
             for (Object o : list) {
                 if (o == null) continue;
-                Map<String, Object> action = new LinkedHashMap<>();
-                action.put("type", "run_command");
-                action.put("command", o.toString().replace("%player%", "{player}"));
-                action.put("as", "console");
-                Map<String, Object> step = new LinkedHashMap<>();
-                step.put("kind", "action");
-                step.put("action", action);
-                out.add(step);
+                if (sb.length() > 0) sb.append('\n');
+                sb.append("run_command \"")
+                  .append(o.toString().replace("%player%", "{player}"))
+                  .append("\" as console");
             }
         }
-        return out;
+        return sb.toString();
     }
 
     /** Slugs identiques (deux entrées de même nom) → suffixe _2, _3… pour garder des ids uniques. */

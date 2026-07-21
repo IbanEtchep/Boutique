@@ -31,17 +31,11 @@ class ShopRepoTest {
         assertEquals(80.0, item.finalPrice(repo.wholeShopDiscount()), 1e-9); // 100*(1-0.20)
     }
 
-    @Test void migratesLegacyBuyCommandsIntoActionSteps() {
+    @Test void migratesLegacyBuyCommandsIntoActionDsl() {
         ShopRepo repo = new ShopRepo();
         repo.load(path -> YAML, List.of("shop.yaml"));
-        var actions = repo.findItem("diamond_sword").orElseThrow().getActions();
-        assertEquals(1, actions.size());
-        assertEquals("action", actions.get(0).get("kind"));
-        @SuppressWarnings("unchecked")
-        var action = (java.util.Map<String, Object>) actions.get(0).get("action");
-        assertEquals("run_command", action.get("type"));
-        assertEquals("give {player} diamond_sword 1", action.get("command"));
-        assertEquals("console", action.get("as"));
+        String actions = repo.findItem("diamond_sword").orElseThrow().getActions();
+        assertEquals("run_command \"give {player} diamond_sword 1\" as console", actions);
     }
 
     @Test void nativeActionsWinOverLegacyBuyCommands() {
@@ -49,16 +43,11 @@ class ShopRepoTest {
             "        buy_commands: [\"give %player% diamond_sword 1\"]",
             String.join("\n",
                 "        buy_commands: [\"ignored\"]",
-                "        actions:",
-                "          - kind: action",
-                "            action: {type: send_message, text: \"Merci !\"}"));
+                "        actions: 'send_message \"Merci !\"'"));
         ShopRepo repo = new ShopRepo();
         repo.load(path -> yaml, List.of("shop.yaml"));
-        var actions = repo.findItem("diamond_sword").orElseThrow().getActions();
-        assertEquals(1, actions.size());
-        @SuppressWarnings("unchecked")
-        var action = (java.util.Map<String, Object>) actions.get(0).get("action");
-        assertEquals("send_message", action.get("type"));
+        String actions = repo.findItem("diamond_sword").orElseThrow().getActions();
+        assertEquals("send_message \"Merci !\"", actions);
     }
 
     @Test void unknownSchemaOrMalformedYamlYieldsEmptyState() {
