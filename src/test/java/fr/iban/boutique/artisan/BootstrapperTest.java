@@ -18,28 +18,31 @@ class BootstrapperTest {
             "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml",
             "lang/fr.yaml");
 
+    // bootstrapIfAbsent writes directly INTO the given project dir (the Add-on
+    // registers e.g. plugins/Boutique/UI as its root), using a sibling .<name>.tmp.
+
     @Test
-    void happyPath_writesAllBundledFiles(@TempDir File projectsDir) throws IOException {
-        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectsDir, Optional.empty());
+    void happyPath_writesAllBundledFiles(@TempDir File parent) throws IOException {
+        File projectDir = new File(parent, "UI");
+        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertTrue(wrote);
-        File projectDir = new File(projectsDir, "boutique_shop");
         assertTrue(projectDir.isDirectory());
         for (String res : EXPECTED_FILES) {
             File f = new File(projectDir, res);
             assertTrue(f.isFile(), () -> res + " should exist");
         }
         // no leftover temp dir
-        assertFalse(new File(projectsDir, ".boutique_shop.tmp").exists());
+        assertFalse(new File(parent, ".UI.tmp").exists());
     }
 
     @Test
-    void preExistingProjectDir_returnsFalseAndWritesNothing(@TempDir File projectsDir) throws IOException {
-        File projectDir = new File(projectsDir, "boutique_shop");
+    void preExistingProjectDir_returnsFalseAndWritesNothing(@TempDir File parent) throws IOException {
+        File projectDir = new File(parent, "UI");
         Files.createDirectories(projectDir.toPath());
         Files.writeString(new File(projectDir, "marker.txt").toPath(), "already there");
 
-        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectsDir, Optional.empty());
+        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertFalse(wrote);
         // untouched: only the marker we wrote is present, nothing bootstrapped
@@ -48,15 +51,15 @@ class BootstrapperTest {
     }
 
     @Test
-    void staleTempDir_isCleanedUpAndDoesNotBlockBootstrap(@TempDir File projectsDir) throws IOException {
-        File tmpDir = new File(projectsDir, ".boutique_shop.tmp");
+    void staleTempDir_isCleanedUpAndDoesNotBlockBootstrap(@TempDir File parent) throws IOException {
+        File tmpDir = new File(parent, ".UI.tmp");
         Files.createDirectories(tmpDir.toPath());
         Files.writeString(new File(tmpDir, "leftover.yaml").toPath(), "junk from a crashed previous attempt");
 
-        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectsDir, Optional.empty());
+        File projectDir = new File(parent, "UI");
+        boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertTrue(wrote);
-        File projectDir = new File(projectsDir, "boutique_shop");
         assertTrue(projectDir.isDirectory());
         for (String res : EXPECTED_FILES) {
             assertTrue(new File(projectDir, res).isFile());
@@ -66,13 +69,13 @@ class BootstrapperTest {
     }
 
     @Test
-    void migratedFiles_overrideBundledAndAddCapturedItems(@TempDir File projectsDir) throws IOException {
+    void migratedFiles_overrideBundledAndAddCapturedItems(@TempDir File parent) throws IOException {
         String shop = "categories: []\n";
         String stack = "item:\n  '==': org.bukkit.inventory.ItemStack\n  type: DIAMOND_SWORD\n";
-        Bootstrapper.bootstrapIfAbsent(projectsDir,
+        File projectDir = new File(parent, "UI");
+        Bootstrapper.bootstrapIfAbsent(projectDir,
                 Optional.of(java.util.Map.of("boutique/shop.yaml", shop, "items/ci_sword.yml", stack)));
 
-        File projectDir = new File(projectsDir, "boutique_shop");
         assertEquals(shop, Files.readString(new File(projectDir, "boutique/shop.yaml").toPath()));
         // Les fichiers migrés hors ressources bundlées (items capturés) sont écrits aussi.
         assertEquals(stack, Files.readString(new File(projectDir, "items/ci_sword.yml").toPath()));

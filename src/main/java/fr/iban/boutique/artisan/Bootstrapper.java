@@ -26,11 +26,11 @@ public final class Bootstrapper {
      * un {@code boutique_shop/} à moitié rempli qui bloquerait tout retry futur (guard
      * {@code projectDir.exists()}).
      */
-    public static boolean bootstrapIfAbsent(File projectsDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {
-        File projectDir = new File(projectsDir, "boutique_shop");
+    public static boolean bootstrapIfAbsent(File projectDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {
         if (projectDir.exists()) return false;
 
-        File tmpDir = new File(projectsDir, ".boutique_shop.tmp");
+        File parent = projectDir.getParentFile();
+        File tmpDir = new File(parent, "." + projectDir.getName() + ".tmp");
         if (tmpDir.exists()) deleteRecursively(tmpDir);
 
         java.util.Map<String, String> migrated = migratedFiles.orElse(java.util.Map.of());
@@ -54,7 +54,7 @@ public final class Bootstrapper {
                 Files.createDirectories(target.getParentFile().toPath());
                 Files.writeString(target.toPath(), entry.getValue());
             }
-            Files.createDirectories(projectsDir.toPath());
+            Files.createDirectories(parent.toPath());
             Files.move(tmpDir.toPath(), projectDir.toPath());
         } catch (IOException e) {
             deleteRecursively(tmpDir);
