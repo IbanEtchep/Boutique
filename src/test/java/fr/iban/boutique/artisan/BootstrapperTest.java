@@ -19,11 +19,11 @@ class BootstrapperTest {
             "lang/fr.yaml");
 
     // bootstrapIfAbsent writes directly INTO the given project dir (the Add-on
-    // registers e.g. plugins/Boutique/UI as its root), using a sibling .<name>.tmp.
+    // registers e.g. plugins/Boutique/editor as its root), using a sibling .<name>.tmp.
 
     @Test
     void happyPath_writesAllBundledFiles(@TempDir File parent) throws IOException {
-        File projectDir = new File(parent, "UI");
+        File projectDir = new File(parent, "editor");
         boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertTrue(wrote);
@@ -33,12 +33,12 @@ class BootstrapperTest {
             assertTrue(f.isFile(), () -> res + " should exist");
         }
         // no leftover temp dir
-        assertFalse(new File(parent, ".UI.tmp").exists());
+        assertFalse(new File(parent, ".editor.tmp").exists());
     }
 
     @Test
     void preExistingProjectDir_returnsFalseAndWritesNothing(@TempDir File parent) throws IOException {
-        File projectDir = new File(parent, "UI");
+        File projectDir = new File(parent, "editor");
         Files.createDirectories(projectDir.toPath());
         Files.writeString(new File(projectDir, "marker.txt").toPath(), "already there");
 
@@ -52,11 +52,11 @@ class BootstrapperTest {
 
     @Test
     void staleTempDir_isCleanedUpAndDoesNotBlockBootstrap(@TempDir File parent) throws IOException {
-        File tmpDir = new File(parent, ".UI.tmp");
+        File tmpDir = new File(parent, ".editor.tmp");
         Files.createDirectories(tmpDir.toPath());
         Files.writeString(new File(tmpDir, "leftover.yaml").toPath(), "junk from a crashed previous attempt");
 
-        File projectDir = new File(parent, "UI");
+        File projectDir = new File(parent, "editor");
         boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertTrue(wrote);
@@ -72,7 +72,7 @@ class BootstrapperTest {
     void migratedFiles_overrideBundledAndAddCapturedItems(@TempDir File parent) throws IOException {
         String shop = "categories: []\n";
         String stack = "item:\n  '==': org.bukkit.inventory.ItemStack\n  type: DIAMOND_SWORD\n";
-        File projectDir = new File(parent, "UI");
+        File projectDir = new File(parent, "editor");
         Bootstrapper.bootstrapIfAbsent(projectDir,
                 Optional.of(java.util.Map.of("boutique/shop.yaml", shop, "items/ci_sword.yml", stack)));
 

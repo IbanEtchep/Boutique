@@ -82,10 +82,12 @@ public final class ShopPlugin extends JavaPlugin {
 
         // Le project boutique_shop vit dans le dossier plugin de CET add-on, pas dans
         // le core plugins/Artisan/projects/ — le core le lit/synchronise via le root
-        // enregistré (ADR addon-owned-project-roots). Le dossier plugins/Boutique/UI/
-        // contient directement le contenu du project. Enregistrer AVANT hasContent pour
-        // que le check voie un project déjà bootstrappé aux démarrages suivants.
-        File projectDir = new File(getDataFolder(), "UI");
+        // enregistré (ADR addon-owned-project-roots). Le dossier plugins/Boutique/editor/
+        // contient directement le contenu géré depuis l'éditeur web (dossier dédié :
+        // le sweep de sync supprime tout fichier hors bundle, donc jamais le dataFolder
+        // racine). Enregistrer AVANT hasContent pour que le check voie un project déjà
+        // bootstrappé aux démarrages suivants.
+        File projectDir = new File(getDataFolder(), "editor");
         api.getProjectRoots().register("boutique_shop", projectDir);
 
         this.shopRepo = new ShopRepo();
@@ -100,7 +102,7 @@ public final class ShopPlugin extends JavaPlugin {
                         ? LegacyConfigMigrator.migrate(legacyRaw)
                         : Optional.empty();
                 if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
-                    getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/UI"
+                    getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/editor"
                             + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
                             + " — /artisan reload puis /artisan pushLocal boutique_shop pour synchroniser.");
                 }
