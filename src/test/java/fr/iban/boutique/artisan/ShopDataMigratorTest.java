@@ -12,10 +12,12 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * One-shot migration (ADR composable-data-models §8): boutique/shop.yaml →
- * the declared-model Table (data/categories/, per-row files) + shop settings
- * config + localized name/lore keys in lang/. The legacy file is archived
- * OUTSIDE the project dir (it must not travel in the bundle).
+ * One-shot migration (ADR composable-data-models §8, BARE form per ADR
+ * bare-data-files): boutique/shop.yaml → the declared-model Table
+ * (data/categories/, per-row PURE-VALUE files, minimal _source.yaml) + the
+ * bare shop settings mapping. Name/lore stay literal default-language text —
+ * no keys minted, lang/ untouched. The legacy file is archived OUTSIDE the
+ * project dir (it must not travel in the bundle).
  */
 class ShopDataMigratorTest {
 
@@ -65,46 +67,36 @@ class ShopDataMigratorTest {
         File projectDir = seedProject(root);
         assertTrue(ShopDataMigrator.migrateIfNeeded(projectDir));
 
-        // _source.yaml: declared-model Table, per-row granularity, version stamped.
+        // Minimal _source.yaml (ADR bare-data-files ③): model link + order only
+        // — the schema is the JAR declaration, never inline.
         Map<String, Object> meta = yaml(new File(projectDir, "data/categories/_source.yaml"));
-        assertEquals("data/v1", meta.get("schema"));
-        assertEquals("categories", meta.get("id"));
-        assertEquals("table", meta.get("shape"));
         assertEquals("boutique:category", meta.get("model"));
         assertEquals(ShopModels.VERSION, meta.get("model_version"));
-        assertEquals("row", meta.get("granularity"));
-        assertEquals("id", meta.get("key_field"));
         assertEquals(List.of("armes", "blocs"), meta.get("order"));
-        // Flattened inline fields keep the file self-contained (ltext typed).
-        List<Map<String, Object>> fields = (List<Map<String, Object>>) meta.get("fields");
-        assertEquals("ltext", fields.stream().filter(f -> f.get("name").equals("name")).findFirst().orElseThrow().get("kind"));
+        assertNull(meta.get("fields"));
+        assertNull(meta.get("schema"));
 
-        // Per-row file: name/lore are i18n KEYS following the key-site convention.
+        // Per-row file: PURE VALUES — name/lore are literal default-language text.
         Map<String, Object> armes = yaml(new File(projectDir, "data/categories/armes.yaml"));
         assertEquals("armes", armes.get("id"));
-        assertEquals("sources.categories.armes.name", armes.get("name"));
+        assertEquals("Armes", armes.get("name"));
         assertEquals("DIAMOND_SWORD", armes.get("icon"));
         assertEquals(10, armes.get("discount"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) armes.get("items");
         assertEquals(1, items.size());
-        assertEquals("sources.categories.armes.items.name", items.get(0).get("name"));
+        assertEquals("Épée légendaire", items.get(0).get("name"));
         assertEquals("item:ci_epee", items.get(0).get("icon"));
-        assertEquals(List.of("sources.categories.armes.items.lore", "sources.categories.armes.items.lore_2"),
-                items.get(0).get("lore"));
+        assertEquals(List.of("Tranchante", "Rare"), items.get(0).get("lore"));
         assertEquals("give_item material=DIAMOND_SWORD count=1", items.get(0).get("actions"));
 
-        // Settings config source.
+        // Settings: a bare mapping — the file IS the value.
         Map<String, Object> settings = yaml(new File(projectDir, "data/shop_settings.yaml"));
-        assertEquals("config", settings.get("shape"));
-        assertEquals(5, ((Map<String, Object>) settings.get("value")).get("whole_shop_discount"));
+        assertEquals(Map.of("whole_shop_discount", 5), settings);
 
-        // Lang: literals landed as translations; existing keys preserved.
+        // Lang untouched: no keys minted (mono-language catalog).
         Map<String, Object> fr = yaml(new File(projectDir, "lang/fr.yaml"));
         assertEquals("Boutique", fr.get("boutique.shop_main.title"));
-        assertEquals("Armes", fr.get("sources.categories.armes.name"));
-        assertEquals("Épée légendaire", fr.get("sources.categories.armes.items.name"));
-        assertEquals("Tranchante", fr.get("sources.categories.armes.items.lore"));
-        assertEquals("Rare", fr.get("sources.categories.armes.items.lore_2"));
+        assertNull(fr.get("sources.categories.armes.name"));
 
         // Legacy file archived OUTSIDE the project dir (never bundled).
         assertFalse(new File(projectDir, "boutique/shop.yaml").exists());

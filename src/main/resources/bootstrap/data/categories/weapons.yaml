@@ -1,10 +1,10 @@
 id: weapons
-name: sources.categories.weapons.name
+name: "Armes"
 icon: DIAMOND_SWORD
 discount: 0
 items:
 - id: diamond_sword
-  name: sources.categories.weapons.items.name
+  name: "Épée en diamant"
   icon: DIAMOND_SWORD
   price: 100
   discount: 0

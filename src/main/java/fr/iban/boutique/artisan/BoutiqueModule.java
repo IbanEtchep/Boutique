@@ -152,9 +152,13 @@ public final class BoutiqueModule implements ArtisanModule {
         String content = api.getProject().read(pid, "data/shop_settings.yaml");
         if (content == null) return 0;
         Object parsed = new org.yaml.snakeyaml.Yaml().load(content);
-        if (parsed instanceof Map<?, ?> m && m.get("value") instanceof Map<?, ?> v
-                && v.get("whole_shop_discount") instanceof Number n) {
-            return n.intValue();
+        if (parsed instanceof Map<?, ?> m) {
+            // Forme nue (ADR bare-data-files) : le fichier EST la valeur.
+            if (m.get("whole_shop_discount") instanceof Number n) return n.intValue();
+            // Forme legacy data/v1 : valeur sous `value:`.
+            if (m.get("value") instanceof Map<?, ?> v && v.get("whole_shop_discount") instanceof Number n) {
+                return n.intValue();
+            }
         }
         return 0;
     }
