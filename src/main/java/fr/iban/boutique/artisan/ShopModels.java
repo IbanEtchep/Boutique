@@ -41,8 +41,9 @@ public final class ShopModels {
         doc.put("fields", List.of(
                 field("id", kind("string"), Map.of("required", true)),
                 field("name", kind("ltext"), Map.of("required", true)),
-                // Managed by /boutiqueadmin additem (captured item refs) — read-only in the form.
-                field("icon", kind("item"), Map.of("locked", true)),
+                // /boutiqueadmin additem sets captured-item refs, but the icon
+                // stays editable in the form (any material or item:<id> ref).
+                field("icon", kind("item"), Map.of()),
                 field("price", kind("number"), Map.of("required", true, "min", 0)),
                 field("discount", kind("integer"), Map.of("default", 0, "min", 0, "max", 100)),
                 field("lore", Map.of("kind", "list", "of", kind("ltext")), Map.of()),

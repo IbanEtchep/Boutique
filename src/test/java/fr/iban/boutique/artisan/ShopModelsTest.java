@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The declared model/v1 documents (ADR composable-data-models §4): namespaced
- * ids, version, master-detail catalog hint, ltext name/lore, locked icon —
+ * ids, version, master-detail catalog hint, ltext name/lore, editable icon —
  * and they must be accepted verbatim by the core ModelRegistry.
  */
 class ShopModelsTest {
@@ -55,7 +55,9 @@ class ShopModelsTest {
         assertEquals(Map.of("kind", "list", "of", Map.of("kind", "ltext")), lore.get("type"));
 
         Map<String, Object> icon = fields.stream().filter(f -> f.get("name").equals("icon")).findFirst().orElseThrow();
-        assertEquals(Boolean.TRUE, icon.get("locked"));
+        // Icon stays EDITABLE in the form (user feedback 2026-07-26) — additem
+        // sets it, the admin may override it.
+        assertNull(icon.get("locked"));
 
         Map<String, Object> price = fields.stream().filter(f -> f.get("name").equals("price")).findFirst().orElseThrow();
         assertEquals(0, price.get("min"));
