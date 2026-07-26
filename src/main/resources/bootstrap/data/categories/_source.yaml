@@ -1,0 +1,39 @@
+schema: data/v1
+id: categories
+name: Catégories
+shape: table
+model: boutique:category
+model_version: 1
+key_field: id
+granularity: row
+order: [weapons]
+fields:
+- name: id
+  kind: string
+- name: name
+  kind: ltext
+- name: icon
+  kind: item
+- name: discount
+  kind: integer
+- name: items
+  kind: list
+  of:
+    kind: object
+    fields:
+    - name: id
+      kind: string
+    - name: name
+      kind: ltext
+    - name: icon
+      kind: item
+    - name: price
+      kind: number
+    - name: discount
+      kind: integer
+    - name: lore
+      kind: list
+      of:
+        kind: ltext
+    - name: actions
+      kind: actions

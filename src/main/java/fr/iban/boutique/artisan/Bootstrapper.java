@@ -13,7 +13,14 @@ import java.util.stream.Stream;
 public final class Bootstrapper {
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml",
+            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml",
+            // Declared-model catalog (ADR composable-data-models §8) — fresh
+            // installs ship the Table format directly; no boutique/shop.yaml.
+            // (A LegacyConfigMigrator result still lands shop.yaml via the
+            // extra-files loop below; ShopDataMigrator converts it at the next
+            // boot, the legacy reader covers the gap.)
+            "data/categories/_source.yaml", "data/categories/weapons.yaml",
+            "data/shop_settings.yaml",
             "lang/fr.yaml");
 
     private Bootstrapper() {}

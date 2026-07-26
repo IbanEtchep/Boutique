@@ -1,2 +1,4 @@
 boutique.shop_main.title: "Boutique"
 boutique.shop_category.title: "Boutique — {category_name}"
+sources.categories.weapons.name: "Armes"
+sources.categories.weapons.items.name: "Épée en diamant"

@@ -15,7 +15,10 @@ class BootstrapperTest {
 
     private static final List<String> EXPECTED_FILES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml", "boutique/shop.yaml",
+            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml",
+            // Declared-model catalog (ADR composable-data-models §8).
+            "data/categories/_source.yaml", "data/categories/weapons.yaml",
+            "data/shop_settings.yaml",
             "lang/fr.yaml");
 
     // bootstrapIfAbsent writes directly INTO the given project dir (the Add-on

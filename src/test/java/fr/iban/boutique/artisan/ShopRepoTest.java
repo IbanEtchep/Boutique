@@ -63,4 +63,45 @@ class ShopRepoTest {
         repo.load(path -> YAML, List.of("a.yaml", "b.yaml")); // ids dupliqués: dernier gagne, pas de crash
         assertTrue(repo.findItem("diamond_sword").isPresent());
     }
+
+    // ── declared-model Table format (ADR composable-data-models §8) ─────────
+
+    private static final String ROW_ARMES = """
+            id: armes
+            name: sources.categories.armes.name
+            icon: DIAMOND_SWORD
+            discount: 10
+            items:
+              - id: epee
+                name: sources.categories.armes.items.name
+                icon: "item:ci_epee"
+                price: 100
+                discount: 0
+                lore: [sources.categories.armes.items.lore, sources.categories.armes.items.lore_2]
+                actions: 'give_item material=DIAMOND_SWORD count=1'
+            """;
+
+    @Test void loadFromDataTableResolvesLtextKeysAgainstTheLangMap() {
+        ShopRepo repo = new ShopRepo();
+        repo.loadFromDataTable(
+                path -> path.equals("armes.yaml") ? ROW_ARMES : null,
+                java.util.List.of("armes.yaml"),
+                java.util.Map.of(
+                        "sources.categories.armes.name", "Armes",
+                        "sources.categories.armes.items.name", "Épée légendaire",
+                        "sources.categories.armes.items.lore", "Tranchante"),
+                5);
+        assertEquals(5, repo.wholeShopDiscount());
+        assertEquals(1, repo.categories().size());
+        var cat = repo.categories().get(0);
+        assertEquals("Armes", cat.getName());
+        assertEquals(10, cat.getDiscount());
+        var item = repo.findItem("epee").orElseThrow();
+        assertEquals("Épée légendaire", item.getName());
+        assertEquals("item:ci_epee", item.getIcon());
+        assertEquals(100.0, item.getPrice());
+        // Missing translation falls back to the raw key (non-hermetic).
+        assertEquals(java.util.List.of("Tranchante", "sources.categories.armes.items.lore_2"), item.getLore());
+        assertEquals("give_item material=DIAMOND_SWORD count=1", item.getActions());
+    }
 }

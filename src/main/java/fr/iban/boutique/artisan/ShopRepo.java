@@ -57,6 +57,55 @@ public final class ShopRepo {
         this.wholeShopDiscount = shopDiscount;
     }
 
+    /**
+     * Chargement depuis la Table de models déclarés (ADR composable-data-models
+     * §8) : `data/categories/` en granularité par-row — un fichier YAML par
+     * catégorie, valeurs ltext = CLÉS i18n résolues contre la map de la langue
+     * par défaut du project (runtime mono-langue ; clé absente → clé brute,
+     * contrat non-hermétique). Le `whole_shop_discount` vient de
+     * `data/shop_settings.yaml` (lu par l'appelant).
+     */
+    @SuppressWarnings("unchecked")
+    public void loadFromDataTable(Function<String, String> readFile, List<String> rowFiles,
+                                  Map<String, String> lang, int shopDiscount) {
+        List<ShopCategory> cats = new ArrayList<>();
+        Map<String, ShopItem> byId = new HashMap<>();
+        for (String file : rowFiles) {
+            String content = readFile.apply(file);
+            if (content == null) continue;
+            Map<String, Object> c;
+            try {
+                Object parsed = new Yaml().load(content);
+                if (!(parsed instanceof Map)) continue;
+                c = (Map<String, Object>) parsed;
+            } catch (RuntimeException e) { continue; }
+            List<ShopItem> items = new ArrayList<>();
+            ShopCategory cat = new ShopCategory(
+                    str(c, "id"), ltext(lang, str(c, "name")), str(c, "icon"),
+                    asInt(c.get("discount"), 0), items);
+            for (Object rawItem : asList(c.get("items"))) {
+                if (!(rawItem instanceof Map)) continue;
+                Map<String, Object> i = (Map<String, Object>) rawItem;
+                List<String> lore = new ArrayList<>();
+                for (String key : strList(i.get("lore"))) lore.add(ltext(lang, key));
+                ShopItem item = new ShopItem(
+                        str(i, "id"), ltext(lang, str(i, "name")), str(i, "icon"),
+                        asDouble(i.get("price")), asInt(i.get("discount"), 0),
+                        List.copyOf(lore), actionsOf(i), cat);
+                items.add(item);
+                byId.put(item.getId(), item);
+            }
+            cats.add(cat);
+        }
+        this.categories = List.copyOf(cats);
+        this.itemsById = Map.copyOf(byId);
+        this.wholeShopDiscount = shopDiscount;
+    }
+
+    private static String ltext(Map<String, String> lang, String key) {
+        return lang.getOrDefault(key, key);
+    }
+
     /** `actions` (chaîne Action DSL) si présent, sinon migration mécanique des
      *  `buy_commands` legacy : une ligne `run_command "…" as console` par commande,
      *  `%player%` → `{player}` (placeholder du moteur de steps Artisan), jointes par

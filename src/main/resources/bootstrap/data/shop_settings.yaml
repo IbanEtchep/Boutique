@@ -1,0 +1,9 @@
+schema: data/v1
+id: shop_settings
+name: Réglages boutique
+shape: config
+fields:
+- name: whole_shop_discount
+  kind: integer
+value:
+  whole_shop_discount: 0

@@ -90,6 +90,16 @@ public final class ShopPlugin extends JavaPlugin {
         File projectDir = new File(getDataFolder(), "editor");
         api.getProjectRoots().register("boutique_shop", projectDir);
 
+        // One-shot (ADR composable-data-models §8): un project pré-migration
+        // (boutique/shop.yaml) bascule vers la Table de models déclarés
+        // (data/categories/). AVANT le register du module, pour que le premier
+        // reloadRepo lise déjà le nouveau format ; la sync files-first
+        // d'Artisan auto-pushe ensuite le nouvel arbre (LOCAL_ONLY).
+        if (fr.iban.boutique.artisan.ShopDataMigrator.migrateIfNeeded(projectDir)) {
+            getLogger().warning("Catalogue migré vers data/categories/ (models déclarés) — "
+                    + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
+        }
+
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
         getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api));
