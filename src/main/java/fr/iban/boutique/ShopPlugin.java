@@ -100,6 +100,16 @@ public final class ShopPlugin extends JavaPlugin {
                     + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
         }
 
+        // One-shot (ADR yaml-assisted-editing) : les formats de prix vivaient
+        // dans config.yml où plus aucun code ne les lisait — ils deviennent des
+        // réglages éditables du project, typés par le model déclaré.
+        if (fr.iban.boutique.artisan.SettingsMigrator.ensureSettings(
+                projectDir,
+                getConfig().getString("placeholders.price-display"),
+                getConfig().getString("placeholders.discount-price-display"))) {
+            getLogger().info("Formats de prix repris dans data/shop_settings.yaml (éditables depuis l'éditeur).");
+        }
+
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
         getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api));

@@ -70,4 +70,39 @@ public final class ShopModels {
         ));
         return doc;
     }
+
+    /**
+     * `boutique:shop_settings` — les réglages de la boutique, édités dans
+     * l'écran « Réglages ». Libellés et descriptions servent à la fois le
+     * formulaire et les commentaires du fichier YAML (ADR
+     * `yaml-assisted-editing` ⑥/⑨) : le fichier s'explique tout seul quand on
+     * l'ouvre en SSH.
+     */
+    public static Map<String, Object> shopSettings() {
+        Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("schema", "model/v1");
+        doc.put("id", "boutique:shop_settings");
+        doc.put("name", "Réglages boutique");
+        doc.put("version", VERSION);
+        doc.put("fields", List.of(
+                field("whole_shop_discount", kind("integer"), Map.of(
+                        "label", "Remise globale",
+                        "help", "Remise appliquée à toute la boutique, en pourcentage (0 à 100).",
+                        "default", 0, "min", 0, "max", 100)),
+                field("placeholders", Map.of("kind", "object", "fields", List.of(
+                        field("price_display", kind("string"), Map.of(
+                                "label", "Format du prix",
+                                "help", "Placeholder disponible : %price%.")),
+                        field("discount_price_display", kind("string"), Map.of(
+                                "label", "Format du prix en promotion",
+                                "help", "Placeholders : %price%, %old_price%, %discount_percent%."))
+                )), Map.of("label", "Affichage des prix"))
+        ));
+        return doc;
+    }
+
+    /** Formats de prix par défaut — repris du `config.yml` historique. */
+    public static final String DEFAULT_PRICE_DISPLAY = "%price% tokens";
+    public static final String DEFAULT_DISCOUNT_PRICE_DISPLAY =
+            "&m%old_price% &f%price% tokens (-%discount_percent%%)";
 }

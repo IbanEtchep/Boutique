@@ -1,1 +1,4 @@
 whole_shop_discount: 0
+placeholders:
+  price_display: "%price% tokens"
+  discount_price_display: "&m%old_price% &f%price% tokens (-%discount_percent%%)"

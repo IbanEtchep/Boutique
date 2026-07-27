@@ -21,6 +21,9 @@ public final class Bootstrapper {
             // boot, the legacy reader covers the gap.)
             "data/categories/_source.yaml", "data/categories/weapons.yaml",
             "data/shop_settings.yaml",
+            // Ref d'une ligne vers le model DÉCLARÉ : le schéma vit dans ce JAR,
+            // il n'est jamais recopié sur le disque (ADR yaml-assisted-editing).
+            "models/shop_settings.yaml",
             "lang/fr.yaml");
 
     private Bootstrapper() {}

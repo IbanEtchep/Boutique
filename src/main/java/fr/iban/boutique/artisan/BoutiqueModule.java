@@ -17,12 +17,16 @@ public final class BoutiqueModule implements ArtisanModule {
     @Override public String getId() { return "boutique"; }
     @Override public String getSchemaVersion() { return "boutique/v1"; }
 
+    /** Réglages courants (rechargés avec le repo). */
+    private volatile ShopSettings settings = ShopSettings.defaults();
+
     @Override public void onEnable(ArtisanAPI api) {
         this.api = api;
         // Declared Data models (ADR composable-data-models §4): the editor
         // renders the catalog form from these — shape versioned with this jar.
         api.getModels().declare(ShopModels.item());
         api.getModels().declare(ShopModels.category());
+        api.getModels().declare(ShopModels.shopSettings());
         // Config screens (ADR module-config-screens): sidebar entries whose
         // core-generated form edits these tables live over the WS relay.
         api.getScreens().declare("boutique:catalog", "Catalogue", "data/categories", "boutique_shop");
@@ -57,6 +61,9 @@ public final class BoutiqueModule implements ArtisanModule {
                         new DataSourceField("category", FieldKind.STRING, null),
                         new DataSourceField("price", FieldKind.NUMBER, null),
                         new DataSourceField("final_price", FieldKind.INTEGER, null),
+                        // Prix déjà mis en forme par les réglages — un menu binde
+                        // `{item.price_display}` au lieu de recomposer le texte.
+                        new DataSourceField("price_display", FieldKind.STRING, null),
                         new DataSourceField("lore", FieldKind.STRING, null)),
                 null,
                 Stability.STATIC,
@@ -86,7 +93,9 @@ public final class BoutiqueModule implements ArtisanModule {
         row.put("icon", i.getIcon());
         row.put("category", i.getCategory().getId());
         row.put("price", i.getPrice());
-        row.put("final_price", (int) Math.round(i.finalPrice(repo.wholeShopDiscount())));
+        int finalPrice = (int) Math.round(i.finalPrice(repo.wholeShopDiscount()));
+        row.put("final_price", finalPrice);
+        row.put("price_display", settings.formatPrice(i.getPrice(), finalPrice));
         row.put("lore", String.join("\n", i.getLore()));
         return row;
     }
@@ -113,11 +122,12 @@ public final class BoutiqueModule implements ArtisanModule {
                     .filter(rel -> rel.endsWith(".yaml") && !rel.equals("_source.yaml"))
                     .collect(Collectors.toList());
             if (rows.isEmpty()) continue;
+            this.settings = ShopSettings.parse(api.getProject().read(pid, "data/shop_settings.yaml"));
             repo.loadFromDataTable(
                     rel -> api.getProject().read(pid, "data/categories/" + rel),
                     rows,
                     readLangMap(pid),
-                    readWholeShopDiscount(pid));
+                    settings.wholeShopDiscount());
             return;
         }
         List<String> files = new ArrayList<>();
@@ -151,19 +161,4 @@ public final class BoutiqueModule implements ArtisanModule {
         return out;
     }
 
-    @SuppressWarnings("unchecked")
-    private int readWholeShopDiscount(String pid) {
-        String content = api.getProject().read(pid, "data/shop_settings.yaml");
-        if (content == null) return 0;
-        Object parsed = new org.yaml.snakeyaml.Yaml().load(content);
-        if (parsed instanceof Map<?, ?> m) {
-            // Forme nue (ADR bare-data-files) : le fichier EST la valeur.
-            if (m.get("whole_shop_discount") instanceof Number n) return n.intValue();
-            // Forme legacy data/v1 : valeur sous `value:`.
-            if (m.get("value") instanceof Map<?, ?> v && v.get("whole_shop_discount") instanceof Number n) {
-                return n.intValue();
-            }
-        }
-        return 0;
-    }
 }
