@@ -141,8 +141,8 @@ public final class BoutiqueModule implements ArtisanModule {
         repo.load(contents::get, files);
     }
 
-    /** Default-lang translations of the project (mono-lang runtime resolution). */
-    @SuppressWarnings("unchecked")
+    /** Default-lang translations of the project (mono-lang runtime resolution).
+     *  The file is a YAML tree — `LangFlattener` folds it back to dotted keys. */
     private Map<String, String> readLangMap(String pid) {
         String lang = "fr";
         String manifest = api.getProject().read(pid, "manifest.yaml");
@@ -154,11 +154,7 @@ public final class BoutiqueModule implements ArtisanModule {
         }
         String content = api.getProject().read(pid, "lang/" + lang + ".yaml");
         if (content == null) return Map.of();
-        Object parsed = new org.yaml.snakeyaml.Yaml().load(content);
-        if (!(parsed instanceof Map)) return Map.of();
-        Map<String, String> out = new HashMap<>();
-        ((Map<String, Object>) parsed).forEach((k, v) -> { if (v != null) out.put(k, v.toString()); });
-        return out;
+        return LangFlattener.flatten(new org.yaml.snakeyaml.Yaml().load(content));
     }
 
 }
