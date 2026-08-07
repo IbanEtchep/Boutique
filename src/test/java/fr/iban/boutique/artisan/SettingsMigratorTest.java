@@ -64,6 +64,24 @@ class SettingsMigratorTest {
         assertEquals("promo %price%", s.discountPriceDisplay());
     }
 
+    /**
+     * Le bootstrap pose déjà un bloc `placeholders` avec les défauts du modèle —
+     * sans quoi les formats du config.yml legacy seraient perdus sur une install
+     * fraîche (le bloc existe donc « rien à seeder »). Tant que les valeurs sont
+     * les défauts intacts, le legacy prime.
+     */
+    @Test
+    void seedsLegacyFormatsOverUntouchedBootstrapDefaults(@TempDir File tmp) throws Exception {
+        File dir = new File(tmp, "editor");
+        Bootstrapper.bootstrapIfAbsent(dir, java.util.Optional.empty());
+
+        assertTrue(SettingsMigrator.ensureSettings(dir, "%price% jetons", "&m%old_price% &f%price% jetons"));
+
+        var s = ShopSettings.parse(Files.readString(new File(dir, "data/shop_settings.yaml").toPath()));
+        assertEquals("%price% jetons", s.priceDisplay());
+        assertEquals("&m%old_price% &f%price% jetons", s.discountPriceDisplay());
+    }
+
     /** Un projet sans dossier data/ n'est pas un projet boutique — ne rien faire. */
     @Test
     void doesNothingOutsideAProject(@TempDir File tmp) {

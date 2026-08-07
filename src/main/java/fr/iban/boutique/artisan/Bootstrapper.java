@@ -11,14 +11,19 @@ import java.util.stream.Stream;
 
 /** Écrit le project par défaut boutique_shop dans plugins/Artisan/projects/ s'il n'existe pas. */
 public final class Bootstrapper {
+    /**
+     * Catalogue EXEMPLE (ADR composable-data-models §8) — la Table déclarée
+     * qu'une install vierge doit trouver. Écarté quand un catalogue legacy est
+     * migré : il masquerait le vrai contenu au chargement ({@code ShopRepo}
+     * lit la Table en priorité) et bloquerait sa conversion (garde
+     * {@code _source.yaml} de {@link ShopDataMigrator}).
+     */
+    static final List<String> EXAMPLE_CATALOG = List.of(
+            "data/categories/_source.yaml", "data/categories/weapons.yaml");
+
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
             "dialogs/confirm_purchase.yaml", "commands/boutique.yaml",
-            // Declared-model catalog (ADR composable-data-models §8) — fresh
-            // installs ship the Table format directly; no boutique/shop.yaml.
-            // (A LegacyConfigMigrator result still lands shop.yaml via the
-            // extra-files loop below; ShopDataMigrator converts it at the next
-            // boot, the legacy reader covers the gap.)
             "data/categories/_source.yaml", "data/categories/weapons.yaml",
             "data/shop_settings.yaml",
             // Ref d'une ligne vers le model DÉCLARÉ : le schéma vit dans ce JAR,
@@ -44,8 +49,12 @@ public final class Bootstrapper {
         if (tmpDir.exists()) deleteRecursively(tmpDir);
 
         java.util.Map<String, String> migrated = migratedFiles.orElse(java.util.Map.of());
+        // Un catalogue migré remplace l'exemple : c'est ShopDataMigrator qui
+        // écrira data/categories/ depuis le boutique/shop.yaml posé plus bas.
+        boolean migratedCatalog = migrated.containsKey("boutique/shop.yaml");
         try {
             for (String res : RESOURCES) {
+                if (migratedCatalog && EXAMPLE_CATALOG.contains(res)) continue;
                 File target = new File(tmpDir, res);
                 Files.createDirectories(target.getParentFile().toPath());
                 if (migrated.containsKey(res)) {

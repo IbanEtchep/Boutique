@@ -90,6 +90,27 @@ public final class ShopPlugin extends JavaPlugin {
         File projectDir = new File(getDataFolder(), "editor");
         api.getProjectRoots().register("boutique_shop", projectDir);
 
+        // Contenu par défaut, ou catalogue repris du config.yml MenuAPI. AVANT
+        // les migrateurs : c'est ce bootstrap qui pose le boutique/shop.yaml
+        // migré, que la conversion ci-dessous bascule dans la Table au même
+        // boot (l'add-on ne sert jamais un catalogue à moitié migré).
+        if (!api.getProject().hasContent("boutique")) {
+            try {
+                // Migration depuis le texte brut capturé AVANT assainissement (le
+                // config.yml sur disque n'a plus son bloc categories à ce stade).
+                Optional<java.util.Map<String, String>> migrated = (hadLegacyConfig && legacyRaw != null)
+                        ? LegacyConfigMigrator.migrate(legacyRaw)
+                        : Optional.empty();
+                if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
+                    getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/editor"
+                            + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
+                            + " — /artisan reload puis /artisan pushLocal boutique_shop pour synchroniser.");
+                }
+            } catch (IOException e) {
+                getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
+            }
+        }
+
         // One-shot (ADR composable-data-models §8): un project pré-migration
         // (boutique/shop.yaml) bascule vers la Table de models déclarés
         // (data/categories/). AVANT le register du module, pour que le premier
@@ -113,23 +134,6 @@ public final class ShopPlugin extends JavaPlugin {
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
         getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api));
-
-        if (!api.getProject().hasContent("boutique")) {
-            try {
-                // Migration depuis le texte brut capturé AVANT assainissement (le
-                // config.yml sur disque n'a plus son bloc categories à ce stade).
-                Optional<java.util.Map<String, String>> migrated = (hadLegacyConfig && legacyRaw != null)
-                        ? LegacyConfigMigrator.migrate(legacyRaw)
-                        : Optional.empty();
-                if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
-                    getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/editor"
-                            + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
-                            + " — /artisan reload puis /artisan pushLocal boutique_shop pour synchroniser.");
-                }
-            } catch (IOException e) {
-                getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
-            }
-        }
     }
 
     @Override

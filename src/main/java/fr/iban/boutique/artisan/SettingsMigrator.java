@@ -53,12 +53,18 @@ public final class SettingsMigrator {
             root.put("whole_shop_discount", 0);
             changed = true;
         }
-        if (!(root.get("placeholders") instanceof Map)) {
+        // Le bootstrap pose déjà un bloc placeholders aux valeurs du modèle :
+        // tant qu'elles sont les défauts intacts, les formats du config.yml
+        // legacy priment (sinon ils seraient perdus sur une install fraîche).
+        // Une valeur choisie par l'admin, elle, n'est jamais écrasée.
+        if (!(root.get("placeholders") instanceof Map) || isUntouchedDefaults(root.get("placeholders"))) {
             Map<String, Object> ph = new LinkedHashMap<>();
             ph.put("price_display", blankTo(legacyPrice, ShopModels.DEFAULT_PRICE_DISPLAY));
             ph.put("discount_price_display", blankTo(legacyDiscount, ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY));
-            root.put("placeholders", ph);
-            changed = true;
+            if (!ph.equals(root.get("placeholders"))) {
+                root.put("placeholders", ph);
+                changed = true;
+            }
         }
         if (changed) Files.writeString(settingsFile.toPath(), plainYaml().dump(root));
         return ensureBesideRef(projectDir) || changed;
@@ -72,6 +78,13 @@ public final class SettingsMigrator {
         if (!models.isDirectory() && !models.mkdirs()) return false;
         Files.writeString(ref.toPath(), "model: boutique:shop_settings\n");
         return true;
+    }
+
+    private static boolean isUntouchedDefaults(Object placeholders) {
+        if (!(placeholders instanceof Map<?, ?> m)) return false;
+        return m.size() == 2
+                && ShopModels.DEFAULT_PRICE_DISPLAY.equals(m.get("price_display"))
+                && ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY.equals(m.get("discount_price_display"));
     }
 
     private static String blankTo(String value, String fallback) {

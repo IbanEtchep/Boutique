@@ -5,9 +5,11 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,8 +33,20 @@ public final class ShopDataMigrator {
     /** @return true when a migration ran. */
     public static boolean migrateIfNeeded(File projectDir) {
         File shopYaml = new File(projectDir, "boutique/shop.yaml");
-        File sourceMeta = new File(projectDir, "data/categories/_source.yaml");
-        if (!shopYaml.isFile() || sourceMeta.exists()) return false;
+        if (!shopYaml.isFile()) return false;
+        if (sourceMetaFile(projectDir).exists()) {
+            // Une Table existe déjà. L'exemple bundlé INTACT n'est pas du
+            // contenu — il cède la place (rattrapage des installs bootstrappées
+            // avant que le catalogue exemple ne soit écarté en mode migration).
+            // Une Table éditée, elle, est la vérité : on n'y touche pas.
+            if (!isUntouchedExampleCatalog(projectDir)) {
+                System.err.println("[Boutique] boutique/shop.yaml en attente de conversion, mais "
+                        + "data/categories/ contient déjà un catalogue — conversion ignorée. "
+                        + "Vider data/categories/ pour forcer la reprise du legacy.");
+                return false;
+            }
+            deleteExampleCatalog(projectDir);
+        }
         try {
             return migrate(projectDir, shopYaml);
         } catch (Exception e) {
@@ -111,6 +125,39 @@ public final class ShopDataMigrator {
 
     private static File sourceMetaFile(File projectDir) {
         return new File(projectDir, "data/categories/_source.yaml");
+    }
+
+    /**
+     * La Table est-elle exactement le catalogue exemple bundlé, octet pour
+     * octet ? Comparaison au contenu du JAR plutôt qu'à une heuristique de nom :
+     * une catégorie ajoutée, renommée ou retouchée fait échouer la comparaison
+     * et protège le contenu de l'admin.
+     */
+    private static boolean isUntouchedExampleCatalog(File projectDir) {
+        File catDir = new File(projectDir, "data/categories");
+        String[] present = catDir.list((d, n) -> n.endsWith(".yaml") || n.endsWith(".yml"));
+        if (present == null) return false;
+        List<String> expected = new ArrayList<>();
+        for (String res : Bootstrapper.EXAMPLE_CATALOG) expected.add(res.substring(res.lastIndexOf('/') + 1));
+        if (present.length != expected.size()) return false;
+        for (String res : Bootstrapper.EXAMPLE_CATALOG) {
+            try (InputStream in = Bootstrapper.class.getResourceAsStream("/bootstrap/" + res)) {
+                if (in == null) return false;
+                File onDisk = new File(projectDir, res);
+                if (!onDisk.isFile()) return false;
+                if (!Arrays.equals(in.readAllBytes(), Files.readAllBytes(onDisk.toPath()))) return false;
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void deleteExampleCatalog(File projectDir) {
+        for (String res : Bootstrapper.EXAMPLE_CATALOG) {
+            File f = new File(projectDir, res);
+            if (f.isFile() && !f.delete()) f.deleteOnExit();
+        }
     }
 
     /** ltext values stay LITERAL default-language text (ADR bare-data-files ④). */
