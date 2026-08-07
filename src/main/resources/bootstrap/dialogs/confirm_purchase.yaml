@@ -7,9 +7,7 @@ body:
 buttons:
   - id: confirm
     label: "§aConfirmer"
-    actions:
-      - { type: run_command, command: "boutique:buy {item_id}" }
+    actions: 'run_command "boutique:buy {item_id}" as player'
   - id: cancel
     label: "§cAnnuler"
-    actions:
-      - { type: open_menu, menu_id: shop_category }
+    actions: 'open_menu shop_category'

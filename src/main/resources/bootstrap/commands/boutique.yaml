@@ -2,6 +2,4 @@ schema: command/v1
 id: boutique
 name: boutique
 description: "Ouvre la boutique"
-steps:
-  - kind: action
-    action: { type: open_menu, menu_id: shop_main }
+actions: 'open_menu shop_main'
