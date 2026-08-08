@@ -68,10 +68,7 @@ public final class BoutiqueModule implements ArtisanModule {
                 null,
                 Stability.STATIC,
                 "id"));
-        api.getCommands().register(new CommandDeclaration("boutique:buy", (player, args) -> {
-            handleBuy(player, args);
-            return kotlin.Unit.INSTANCE;
-        }));
+        api.getCommands().register(new CommandDeclaration("boutique:buy", this::handleBuy));
     }
 
     /** Ligne categorie avec ses items IMBRIQUES - permet aussi bien le join

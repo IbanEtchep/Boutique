@@ -85,11 +85,18 @@
             <version>1.0.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Scope `test` seulement. La surface artisan-core-api n'expose que des
+             types Java (interfaces fonctionnelles du package api, enums Java, types
+             Bukkit) : compiler l'add-on ne demande plus la stdlib. Mais les tests qui
+             EXÉCUTENT du core (registries implémentés en Kotlin) ont besoin
+             d'Intrinsics — le JAR d'API publié n'est pas relocalisé. Au runtime
+             serveur, le plugin charge ses classes relocalisées depuis ArtisanPlugin.jar
+             et rien ici ne dépend de kotlin.* : c'est tout l'objet de la relocalisation. -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>2.0.21</version>
-            <scope>provided</scope>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>
