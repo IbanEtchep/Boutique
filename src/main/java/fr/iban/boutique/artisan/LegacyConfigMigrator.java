@@ -3,11 +3,41 @@ package fr.iban.boutique.artisan;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 /** One-shot : ancien config.yml MenuAPI → boutique/v1. Lecture en maps brutes (jamais YamlConfiguration : blocs `==: menuitem`). */
 public final class LegacyConfigMigrator {
     private LegacyConfigMigrator() {}
+
+    /**
+     * Le texte à donner à {@link #migrate} : {@code config.yml.legacy} s'il
+     * existe, sinon {@code config.yml}, sinon null.
+     *
+     * L'assainissement ({@link #stripCategoriesBlock}) est destructif et tourne
+     * AVANT la migration — il le doit, Bukkit ne sait plus désérialiser les
+     * blocs `==: menuitem` et le moindre getConfig() planterait. Un plugin qui
+     * meurt entre les deux (LinkageError du 2026-08-08) laisse donc un
+     * config.yml sans catalogue, et la migration du boot suivant ne trouve plus
+     * rien : le serveur se réveille avec le catalogue d'exemple à la place de
+     * ses 7 catégories. La copie d'avant assainissement est la source de vérité
+     * tant qu'elle est là.
+     */
+    public static String readLegacySource(File dataFolder) {
+        for (String name : new String[]{"config.yml.legacy", "config.yml"}) {
+            File f = new File(dataFolder, name);
+            if (!f.isFile()) continue;
+            try {
+                String content = Files.readString(f.toPath());
+                if (content.contains("categories:")) return content;
+            } catch (IOException e) {
+                // Fichier illisible : on tente le suivant plutôt que d'échouer.
+            }
+        }
+        return null;
+    }
 
     /**
      * Retire le bloc top-level `categories:` d'un config.yml legacy. Nécessaire AVANT le premier
@@ -76,7 +106,7 @@ public final class LegacyConfigMigrator {
                             (String) itemDisplay.getOrDefault("icon", "BARRIER"), files));
                     item.put("price", i.getOrDefault("price", 0));
                     item.put("discount", i.getOrDefault("discount", 0));
-                    item.put("lore", itemDisplay.getOrDefault("lore", List.of()));
+                    item.put("lore", dropPricePlaceholders(itemDisplay.get("lore")));
                     item.put("actions", migrateCommands(i.getOrDefault("buycommands", List.of())));
                     items.add(item);
                 }
@@ -154,6 +184,24 @@ public final class LegacyConfigMigrator {
         return out;
     }
 
+    /**
+     * Le lore sans ses lignes de placeholder de prix. `%price_display%` (et sa
+     * variante promo) était résolu par l'ancien moteur de rendu ; côté Artisan
+     * le prix est affiché par le menu, et la ligne resterait littérale dans
+     * l'infobulle.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> dropPricePlaceholders(Object rawLore) {
+        if (!(rawLore instanceof List)) return List.of();
+        List<String> out = new ArrayList<>();
+        for (Object line : (List<Object>) rawLore) {
+            String s = String.valueOf(line);
+            if (s.trim().matches("(?i)%(price|promo_price|discount_price)_display%")) continue;
+            out.add(s);
+        }
+        return List.copyOf(out);
+    }
+
     /** buycommands legacy → chaîne Action DSL `actions` : une ligne
      *  `run_command "…" as console` par commande, `%player%` → `{player}`
      *  (placeholder du moteur de steps Artisan), jointes par des retours ligne. */
@@ -178,7 +226,12 @@ public final class LegacyConfigMigrator {
         return candidate;
     }
 
-    private static String stripAmp(String s) { return s == null ? "" : s.replaceAll("[&§][0-9a-fk-orx]", "").trim(); }
+    /** Retire les codes couleur legacy. Insensible à la casse : les codes hex
+     *  du serveur s'écrivent `&x&D&2&A&6&A&6`, et ne garder que les minuscules
+     *  laissait « &D&A&A » dans le nom (donc des ids comme `d_a_al`). */
+    private static String stripAmp(String s) {
+        return s == null ? "" : s.replaceAll("(?i)[&§][0-9a-fk-orx]", "").trim();
+    }
 
     private static String slug(String name, String fallback) {
         if (name == null) return fallback;

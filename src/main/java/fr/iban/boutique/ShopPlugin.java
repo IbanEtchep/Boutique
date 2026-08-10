@@ -39,14 +39,24 @@ public final class ShopPlugin extends JavaPlugin {
         // Un config legacy contient des blocs sérialisés MenuAPI (`==: menuitem`) que
         // YamlConfiguration ne peut plus désérialiser — il faut capturer le texte brut
         // (pour le migrateur) et assainir le fichier AVANT le premier getConfig().
-        String legacyRaw = null;
+        // Source du catalogue : config.yml.legacy s'il existe (copie d'avant
+        // assainissement), sinon config.yml. Sans ça, un plugin qui meurt entre
+        // l'assainissement et le bootstrap perd le catalogue pour de bon — le
+        // boot suivant ne voit plus qu'un config.yml amputé et pose l'exemple.
+        String legacyRaw = LegacyConfigMigrator.readLegacySource(getDataFolder());
         if (hadLegacyConfig) {
             try {
                 File configFile = new File(getDataFolder(), "config.yml");
-                legacyRaw = Files.readString(configFile.toPath());
-                if (legacyRaw.contains("==:")) {
-                    Files.writeString(new File(getDataFolder(), "config.yml.legacy").toPath(), legacyRaw);
-                    Files.writeString(configFile.toPath(), LegacyConfigMigrator.stripCategoriesBlock(legacyRaw));
+                String onDisk = Files.readString(configFile.toPath());
+                if (onDisk.contains("==:")) {
+                    if (legacyRaw == null) legacyRaw = onDisk;
+                    // Ne JAMAIS écraser une copie de référence existante : elle
+                    // porte le catalogue, celle-ci pourrait déjà en être amputée.
+                    File legacyCopy = new File(getDataFolder(), "config.yml.legacy");
+                    if (!legacyCopy.isFile()) Files.writeString(legacyCopy.toPath(), onDisk);
+                    // On assainit le fichier VIVANT, pas la copie : le config.yml
+                    // porte aussi database/messages, éventuellement édités depuis.
+                    Files.writeString(configFile.toPath(), LegacyConfigMigrator.stripCategoriesBlock(onDisk));
                     getLogger().warning("config.yml contenait des blocs MenuAPI sérialisés — original sauvegardé dans config.yml.legacy, bloc categories retiré (le catalogue est migré vers le project Artisan).");
                 }
             } catch (IOException e) {
