@@ -120,6 +120,11 @@ public final class ShopDataMigrator {
         // ── archive the legacy file OUTSIDE the project (never bundled) ─────
         File archive = new File(projectDir.getParentFile(), "shop.yaml.migrated");
         Files.move(shopYamlFile.toPath(), archive.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        // Le dossier `boutique/` n'a plus lieu d'être : vide, il voyagerait dans
+        // le bundle et dans les exports de project comme un fantôme du legacy.
+        File legacyDir = shopYamlFile.getParentFile();
+        String[] left = legacyDir.list();
+        if (left != null && left.length == 0) legacyDir.delete();
         return true;
     }
 

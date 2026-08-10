@@ -101,6 +101,8 @@ class ShopDataMigratorTest {
         // Legacy file archived OUTSIDE the project dir (never bundled).
         assertFalse(new File(projectDir, "boutique/shop.yaml").exists());
         assertTrue(new File(root, "shop.yaml.migrated").exists());
+        // …et pas de dossier `boutique/` vide laissé dans le project.
+        assertFalse(new File(projectDir, "boutique").exists());
     }
 
     @Test

@@ -73,6 +73,20 @@ class LegacyRealWorldConfigTest {
     }
 
     /**
+     * Le serveur mélange DEUX syntaxes de couleur : `&x&R&R&G&G&B&B` (legacy
+     * Bukkit) et `#RRGGBB` (moderne). Ne nettoyer que la première laissait
+     * « #3399FFSpawner à poule » comme nom, et un id de repli `item_1_2` —
+     * le slug ne peut pas commencer par le chiffre du code couleur.
+     */
+    @Test
+    void modernHexColourCodesAreStrippedToo() {
+        assertEquals("Kit Mineur", LegacyConfigMigrator.stripColours("#3399FF&lKit Mineur"));
+        assertEquals("Pack fer", LegacyConfigMigrator.stripColours(
+                "&l#A5B2B7P#9AA5A9a#8E999Cc#838C8Ek #6C7372f#606765e#555A57r"));
+        assertEquals("Spawner à poule", LegacyConfigMigrator.stripColours("#3399FF&lSpawner à poule"));
+    }
+
+    /**
      * `%price_display%` était résolu par l'ancien moteur de rendu. Côté Artisan le
      * prix est affiché par le menu ; garder la ligne afficherait le placeholder
      * brut dans le lore.

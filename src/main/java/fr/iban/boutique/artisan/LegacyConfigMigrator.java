@@ -226,11 +226,23 @@ public final class LegacyConfigMigrator {
         return candidate;
     }
 
-    /** Retire les codes couleur legacy. Insensible à la casse : les codes hex
-     *  du serveur s'écrivent `&x&D&2&A&6&A&6`, et ne garder que les minuscules
-     *  laissait « &D&A&A » dans le nom (donc des ids comme `d_a_al`). */
+    /**
+     * Retire les codes couleur d'un texte legacy. Le serveur en mélange DEUX
+     * syntaxes, et les deux doivent sauter :
+     *
+     *   `&x&D&2&A&6&A&6&l` — legacy Bukkit, écrit en MAJUSCULES (d'où le (?i) :
+     *                        ne traiter que les minuscules laissait « &D&A&A »)
+     *   `#3399FF` / `&#3399FF` — hex moderne, qui sinon collait au nom
+     *                        (« #3399FFSpawner à poule ») et faisait tomber
+     *                        l'id en repli, un slug ne pouvant pas commencer
+     *                        par le chiffre du code couleur.
+     */
+    static String stripColours(String s) {
+        return s == null ? "" : s.replaceAll("(?i)(&?#[0-9a-f]{6}|[&§][0-9a-fk-orx])", "").trim();
+    }
+
     private static String stripAmp(String s) {
-        return s == null ? "" : s.replaceAll("(?i)[&§][0-9a-fk-orx]", "").trim();
+        return stripColours(s);
     }
 
     private static String slug(String name, String fallback) {
