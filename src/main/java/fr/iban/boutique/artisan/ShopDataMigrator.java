@@ -117,6 +117,9 @@ public final class ShopDataMigrator {
         settings.put("whole_shop_discount", intOf(shop.get("whole_shop_discount")));
         Files.writeString(new File(projectDir, "data/shop_settings.yaml").toPath(), yaml.dump(settings));
 
+        // ── mise en page d'origine : un menu par catégorie ──────────────────
+        writePlacedMenus(projectDir, categories, yaml);
+
         // ── archive the legacy file OUTSIDE the project (never bundled) ─────
         File archive = new File(projectDir.getParentFile(), "shop.yaml.migrated");
         Files.move(shopYamlFile.toPath(), archive.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -126,6 +129,134 @@ public final class ShopDataMigrator {
         String[] left = legacyDir.list();
         if (left != null && left.length == 0) legacyDir.delete();
         return true;
+    }
+
+    /**
+     * Rend la mise en page du legacy, où rien n'est paginé : chaque catégorie et
+     * chaque article portent leur slot. On produit donc UN MENU PAR CATÉGORIE,
+     * dont la source est filtrée sur cet id — le placement retrouve sa
+     * sémantique (une source, un écran, des slots fixes) au lieu d'un menu
+     * unique où un même slot porterait sept occupants selon le contexte.
+     *
+     * Sans aucun slot dans le legacy, on ne touche à rien : les menus paginés
+     * bundlés restent.
+     */
+    @SuppressWarnings("unchecked")
+    private static void writePlacedMenus(File projectDir, List<Map<String, Object>> categories, Yaml yaml)
+            throws IOException {
+        if (categories.stream().noneMatch(c -> c.get("slot") instanceof Number)) return;
+
+        File menusDir = new File(projectDir, "menus");
+        if (!menusDir.mkdirs() && !menusDir.isDirectory()) throw new IOException("cannot create " + menusDir);
+
+        List<String> menuIds = new ArrayList<>();
+        menuIds.add("shop_main");
+        List<Map<String, Object>> mainElements = new ArrayList<>();
+
+        for (Map<String, Object> cat : categories) {
+            String catId = String.valueOf(cat.get("id"));
+            String menuId = "shop_" + slug(catId);
+            menuIds.add(menuId);
+
+            // Menu principal : un élément par catégorie. Le clic doit être
+            // littéral (`open_menu shop_les_cles`) — le lexer du DSL n'accepte
+            // pas de template dans un identifiant — mais le placement garde nom
+            // et icône liés à la donnée.
+            Map<String, Object> el = new LinkedHashMap<>();
+            el.put("id", "cat_" + slug(catId));
+            el.put("places", places("cats", "cat", List.of(placement(catId, cat))));
+            el.put("appearances", List.of(appearance("{cat.icon}", "{cat.name}",
+                    List.of(), "open_menu " + menuId)));
+            mainElements.add(el);
+
+            // Menu de la catégorie : ses articles, à leurs slots.
+            List<Map<String, Object>> placements = new ArrayList<>();
+            for (Map<String, Object> item : (List<Map<String, Object>>) cat.getOrDefault("items", List.of())) {
+                if (item.get("slot") instanceof Number) {
+                    placements.add(placement(String.valueOf(item.get("id")), item));
+                }
+            }
+            Map<String, Object> grid = new LinkedHashMap<>();
+            grid.put("id", "grid");
+            grid.put("places", places("items", "item", placements));
+            grid.put("appearances", List.of(appearance("{item.icon}", "{item.name}",
+                    List.of("{item.lore}", "{item.price_display}"),
+                    "open_dialog confirm_purchase with item_id=\"{item.id}\" "
+                            + "item_name=\"{item.name}\" item_price=\"{item.final_price}\"")));
+
+            Map<String, Object> back = new LinkedHashMap<>();
+            back.put("id", "back");
+            back.put("positions", 49);
+            back.put("appearances", List.of(appearance("ARROW", "§7Retour", List.of(), "open_menu shop_main")));
+
+            Map<String, Object> menu = new LinkedHashMap<>();
+            menu.put("schema", "menu/v1");
+            menu.put("id", menuId);
+            menu.put("title", String.valueOf(cat.get("name")));
+            menu.put("size", 54);
+            menu.put("inputs", List.of(Map.of(
+                    "name", "items",
+                    "type", "list",
+                    "source", Map.of("ref", "boutique:items", "filter", Map.of("category", catId)))));
+            menu.put("elements", List.of(grid, back));
+            Files.writeString(new File(menusDir, menuId + ".yaml").toPath(), yaml.dump(menu));
+        }
+
+        Map<String, Object> main = new LinkedHashMap<>();
+        main.put("schema", "menu/v1");
+        main.put("id", "shop_main");
+        main.put("title", Map.of("key", "boutique.shop_main.title"));
+        main.put("size", 54);
+        main.put("inputs", List.of(Map.of(
+                "name", "cats", "type", "list", "source", Map.of("ref", "boutique:categories"))));
+        main.put("elements", mainElements);
+        Files.writeString(new File(menusDir, "shop_main.yaml").toPath(), yaml.dump(main));
+
+        // Le menu paginé bundlé n'a plus de raison d'être.
+        new File(menusDir, "shop_category.yaml").delete();
+        rewriteManifestMenus(projectDir, menuIds, yaml);
+    }
+
+    private static Map<String, Object> placement(String key, Map<String, Object> src) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("key", key);
+        p.put("page", intOf(src.get("page")));
+        p.put("position", intOf(src.get("slot")));
+        return p;
+    }
+
+    private static Map<String, Object> places(String source, String alias, List<Map<String, Object>> placements) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("source", source);
+        p.put("alias", alias);
+        p.put("key_field", "id");
+        p.put("placements", placements);
+        return p;
+    }
+
+    private static Map<String, Object> appearance(String material, String title, List<String> lore, String click) {
+        Map<String, Object> a = new LinkedHashMap<>();
+        a.put("material", material);
+        a.put("title", title);
+        if (!lore.isEmpty()) a.put("lore", lore);
+        a.put("click", Map.of("left", click));
+        return a;
+    }
+
+    /** Un menu absent du manifeste n'est pas lu par le plugin. */
+    @SuppressWarnings("unchecked")
+    private static void rewriteManifestMenus(File projectDir, List<String> menuIds, Yaml yaml) throws IOException {
+        File manifestFile = new File(projectDir, "manifest.yaml");
+        if (!manifestFile.isFile()) return;
+        Map<String, Object> manifest = yaml.load(Files.readString(manifestFile.toPath()));
+        if (manifest == null) return;
+        Object rawFiles = manifest.get("files");
+        Map<String, Object> files = rawFiles instanceof Map
+                ? new LinkedHashMap<>((Map<String, Object>) rawFiles)
+                : new LinkedHashMap<>();
+        files.put("menus", menuIds);
+        manifest.put("files", files);
+        Files.writeString(manifestFile.toPath(), yaml.dump(manifest));
     }
 
     private static File sourceMetaFile(File projectDir) {

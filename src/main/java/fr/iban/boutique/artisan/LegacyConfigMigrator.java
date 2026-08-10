@@ -108,6 +108,7 @@ public final class LegacyConfigMigrator {
                     item.put("discount", i.getOrDefault("discount", 0));
                     item.put("lore", dropPricePlaceholders(itemDisplay.get("lore")));
                     item.put("actions", migrateCommands(i.getOrDefault("buycommands", List.of())));
+                    putPlacement(item, rawItemDisplay);
                     items.add(item);
                 }
             }
@@ -117,6 +118,7 @@ public final class LegacyConfigMigrator {
             cat.put("icon", captureStack(c.get("menuitem"), "ci_" + catId,
                     (String) catDisplay.getOrDefault("icon", "CHEST"), files));
             cat.put("discount", c.getOrDefault("discount", 0));
+            putPlacement(cat, c.get("menuitem"));
             cat.put("items", items);
             categories.add(cat);
         }
@@ -217,6 +219,22 @@ public final class LegacyConfigMigrator {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Reporte `page`/`slot` du bloc menuitem legacy. Ces deux champs décrivent
+     * la MISE EN PAGE, pas l'article : ShopDataMigrator s'en sert pour générer
+     * des menus en mode placement, puis les jette — ils n'ont rien à faire dans
+     * la Table, où ils ne sont pas déclarés par le model.
+     */
+    @SuppressWarnings("unchecked")
+    private static void putPlacement(Map<String, Object> target, Object rawMenuItem) {
+        if (!(rawMenuItem instanceof Map)) return;
+        Map<String, Object> m = (Map<String, Object>) rawMenuItem;
+        if (m.get("slot") instanceof Number slot) {
+            target.put("slot", slot.intValue());
+            target.put("page", m.get("page") instanceof Number p ? p.intValue() : 0);
+        }
     }
 
     /** Slugs identiques (deux entrées de même nom) → suffixe _2, _3… pour garder des ids uniques. */
