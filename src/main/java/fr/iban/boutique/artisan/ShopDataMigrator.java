@@ -133,10 +133,16 @@ public final class ShopDataMigrator {
 
     /**
      * Rend la mise en page du legacy, où rien n'est paginé : chaque catégorie et
-     * chaque article portent leur slot. On produit donc UN MENU PAR CATÉGORIE,
-     * dont la source est filtrée sur cet id — le placement retrouve sa
-     * sémantique (une source, un écran, des slots fixes) au lieu d'un menu
-     * unique où un même slot porterait sept occupants selon le contexte.
+     * chaque article portent leur slot. On remplace donc la pagination des menus
+     * bundlés par du placement — dans UN SEUL menu paramétré, pas un menu par
+     * catégorie (ADR `parameterised-menu-over-menu-per-category`).
+     *
+     * Un menu par catégorie se lisait plus simplement, mais faisait payer quatre
+     * artefacts corrélés à chaque nouvelle catégorie : une ligne, un menu, un
+     * lien, un filtre. Ici `shop_category` porte les placements de TOUTES les
+     * catégories — deux articles peuvent viser le même slot, ce n'est pas une
+     * collision puisque le filtre ne laisse exister que ceux de la catégorie
+     * ouverte. Ajouter une catégorie redevient un geste : créer la ligne.
      *
      * Sans aucun slot dans le legacy, on ne touche à rien : les menus paginés
      * bundlés restent.
@@ -149,58 +155,30 @@ public final class ShopDataMigrator {
         File menusDir = new File(projectDir, "menus");
         if (!menusDir.mkdirs() && !menusDir.isDirectory()) throw new IOException("cannot create " + menusDir);
 
-        List<String> menuIds = new ArrayList<>();
-        menuIds.add("shop_main");
-        List<Map<String, Object>> mainElements = new ArrayList<>();
+        List<Map<String, Object>> catPlacements = new ArrayList<>();
+        List<Map<String, Object>> itemPlacements = new ArrayList<>();
+        String firstCategoryId = null;
 
         for (Map<String, Object> cat : categories) {
             String catId = String.valueOf(cat.get("id"));
-            String menuId = "shop_" + slug(catId);
-            menuIds.add(menuId);
-
-            // Menu principal : un élément par catégorie. Le clic doit être
-            // littéral (`open_menu shop_les_cles`) — le lexer du DSL n'accepte
-            // pas de template dans un identifiant — mais le placement garde nom
-            // et icône liés à la donnée.
-            Map<String, Object> el = new LinkedHashMap<>();
-            el.put("id", "cat_" + slug(catId));
-            el.put("places", places("cats", "cat", List.of(placement(catId, cat))));
-            el.put("appearances", List.of(appearance("{cat.icon}", "{cat.name}",
-                    List.of(), "open_menu " + menuId)));
-            mainElements.add(el);
-
-            // Menu de la catégorie : ses articles, à leurs slots.
-            List<Map<String, Object>> placements = new ArrayList<>();
+            if (firstCategoryId == null) firstCategoryId = catId;
+            if (cat.get("slot") instanceof Number) catPlacements.add(placement(catId, cat));
             for (Map<String, Object> item : (List<Map<String, Object>>) cat.getOrDefault("items", List.of())) {
                 if (item.get("slot") instanceof Number) {
-                    placements.add(placement(String.valueOf(item.get("id")), item));
+                    itemPlacements.add(placement(String.valueOf(item.get("id")), item));
                 }
             }
-            Map<String, Object> grid = new LinkedHashMap<>();
-            grid.put("id", "grid");
-            grid.put("places", places("items", "item", placements));
-            grid.put("appearances", List.of(appearance("{item.icon}", "{item.name}",
-                    List.of("{item.lore}", "{item.price_display}"),
-                    "open_dialog confirm_purchase with item_id=\"{item.id}\" "
-                            + "item_name=\"{item.name}\" item_price=\"{item.final_price}\"")));
-
-            Map<String, Object> back = new LinkedHashMap<>();
-            back.put("id", "back");
-            back.put("positions", 49);
-            back.put("appearances", List.of(appearance("ARROW", "§7Retour", List.of(), "open_menu shop_main")));
-
-            Map<String, Object> menu = new LinkedHashMap<>();
-            menu.put("schema", "menu/v1");
-            menu.put("id", menuId);
-            menu.put("title", String.valueOf(cat.get("name")));
-            menu.put("size", 54);
-            menu.put("inputs", List.of(Map.of(
-                    "name", "items",
-                    "type", "list",
-                    "source", Map.of("ref", "boutique:items", "filter", Map.of("category", catId)))));
-            menu.put("elements", List.of(grid, back));
-            Files.writeString(new File(menusDir, menuId + ".yaml").toPath(), yaml.dump(menu));
         }
+
+        // ── menu principal : les catégories, lien dynamique ─────────────────
+        Map<String, Object> catGrid = new LinkedHashMap<>();
+        catGrid.put("id", "grid");
+        catGrid.put("places", places("cats", "cat", catPlacements));
+        // Le template tient ici parce qu'il est DANS une chaîne : le lexer du DSL
+        // refuse d'interpoler un identifiant de menu (`open_menu shop_{cat.id}`),
+        // mais `category="{cat.id}"` est une valeur de contexte comme une autre.
+        catGrid.put("appearances", List.of(appearance("{cat.icon}", "{cat.name}", List.of(),
+                "open_menu shop_category with category=\"{cat.id}\" category_name=\"{cat.name}\"")));
 
         Map<String, Object> main = new LinkedHashMap<>();
         main.put("schema", "menu/v1");
@@ -209,12 +187,50 @@ public final class ShopDataMigrator {
         main.put("size", 54);
         main.put("inputs", List.of(Map.of(
                 "name", "cats", "type", "list", "source", Map.of("ref", "boutique:categories"))));
-        main.put("elements", mainElements);
+        main.put("elements", List.of(catGrid));
         Files.writeString(new File(menusDir, "shop_main.yaml").toPath(), yaml.dump(main));
 
-        // Le menu paginé bundlé n'a plus de raison d'être.
-        new File(menusDir, "shop_category.yaml").delete();
-        rewriteManifestMenus(projectDir, menuIds, yaml);
+        // ── menu de catégorie : paramétré, un seul pour toutes ──────────────
+        Map<String, Object> grid = new LinkedHashMap<>();
+        grid.put("id", "grid");
+        grid.put("places", places("items", "item", itemPlacements));
+        grid.put("appearances", List.of(appearance("{item.icon}", "{item.name}",
+                List.of("{item.lore}", "{item.price_display}"),
+                "open_dialog confirm_purchase with item_id=\"{item.id}\" "
+                        + "item_name=\"{item.name}\" item_price=\"{item.final_price}\"")));
+
+        Map<String, Object> back = new LinkedHashMap<>();
+        back.put("id", "back");
+        back.put("positions", 49);
+        back.put("appearances", List.of(appearance("ARROW", "§7Retour", List.of(), "open_menu shop_main")));
+
+        Map<String, Object> category = new LinkedHashMap<>();
+        category.put("schema", "menu/v1");
+        category.put("id", "shop_category");
+        category.put("title", Map.of("key", "boutique.shop_category.title"));
+        category.put("size", 54);
+        // `default` sur la catégorie : sans contexte, un menu paramétré ne rend
+        // RIEN (le filtre compare à une valeur vide). Le défaut évite l'écran
+        // muet — dans l'éditeur avant qu'on choisisse un Preview context, et en
+        // jeu si quelqu'un ouvre le menu à la main.
+        category.put("inputs", List.of(
+                inputOf("category", "string", firstCategoryId),
+                inputOf("category_name", "string", ""),
+                Map.of("name", "items", "type", "list",
+                        "source", Map.of("ref", "boutique:items",
+                                "filter", Map.of("category", "{category}")))));
+        category.put("elements", List.of(grid, back));
+        Files.writeString(new File(menusDir, "shop_category.yaml").toPath(), yaml.dump(category));
+
+        rewriteManifestMenus(projectDir, List.of("shop_main", "shop_category"), yaml);
+    }
+
+    private static Map<String, Object> inputOf(String name, String type, String dflt) {
+        Map<String, Object> in = new LinkedHashMap<>();
+        in.put("name", name);
+        in.put("type", type);
+        in.put("default", dflt == null ? "" : dflt);
+        return in;
     }
 
     private static Map<String, Object> placement(String key, Map<String, Object> src) {

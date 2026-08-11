@@ -14,17 +14,13 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Le legacy ne pagine pas : chaque catégorie et chaque article porte un
  * {@code page}/{@code slot} explicite. La migration doit rendre cette mise en
- * page, donc produire UN MENU PAR CATÉGORIE, chacun plaçant ses propres
- * articles.
+ * page — donc du placement — mais dans UN SEUL menu paramétré, pas un menu par
+ * catégorie (ADR `parameterised-menu-over-menu-per-category`).
  *
- * Pourquoi un menu par catégorie plutôt qu'un menu paramétré unique : le mode
- * placement épingle des lignes d'une source à des slots fixes. Avec un seul
- * menu réutilisé pour les 7 catégories, un même slot porterait 7 occupants
- * selon le contexte d'aperçu — invisible à l'édition, et l'article de la
- * catégorie « Clés » et celui des « Kits » visent tous deux le slot 20. Un menu
- * par catégorie rend au placement sa sémantique : une source, un écran, des
- * slots. Le filtre littéral (`filter: {category: "<id>"}`) suffit — la source
- * reste STATIC, donc plaçable.
+ * Un menu par catégorie rendait la même chose et se lisait plus simplement,
+ * mais faisait payer quatre artefacts corrélés à chaque nouvelle catégorie :
+ * une ligne, un menu, un lien, un filtre. Avec un menu paramétré, ajouter une
+ * catégorie est un geste — créer la ligne — et tout le reste suit.
  */
 class PlacedMenuGenerationTest {
 
@@ -88,82 +84,82 @@ class PlacedMenuGenerationTest {
         return new Yaml().load(Files.readString(f.toPath()));
     }
 
-    @Test
     @SuppressWarnings("unchecked")
-    void oneMenuPerCategoryFilteredOnItsOwnId(@TempDir File root) throws Exception {
-        File projectDir = migrate(root);
-
-        Map<String, Object> menu = yaml(new File(projectDir, "menus/shop_les_cles.yaml"));
-        assertEquals("shop_les_cles", menu.get("id"));
-
-        List<Map<String, Object>> inputs = (List<Map<String, Object>>) menu.get("inputs");
-        Map<String, Object> source = (Map<String, Object>) inputs.get(0).get("source");
-        assertEquals("boutique:items", source.get("ref"));
-        // Filtre LITTÉRAL : la source reste statique, donc plaçable.
-        assertEquals(Map.of("category", "les_cles"), source.get("filter"));
+    private Map<String, Object> placesOf(Map<String, Object> menu, int elementIndex) {
+        List<Map<String, Object>> elements = (List<Map<String, Object>>) menu.get("elements");
+        return (Map<String, Object>) elements.get(elementIndex).get("places");
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void itemsKeepTheirSlotAndPage(@TempDir File root) throws Exception {
+    void aSingleParameterisedMenuServesEveryCategory(@TempDir File root) throws Exception {
         File projectDir = migrate(root);
 
-        Map<String, Object> menu = yaml(new File(projectDir, "menus/shop_les_cles.yaml"));
-        List<Map<String, Object>> elements = (List<Map<String, Object>>) menu.get("elements");
-        Map<String, Object> places = (Map<String, Object>) elements.get(0).get("places");
+        assertFalse(new File(projectDir, "menus/shop_les_cles.yaml").exists(),
+                "un menu par catégorie ferait payer quatre artefacts à chaque ajout");
 
+        Map<String, Object> menu = yaml(new File(projectDir, "menus/shop_category.yaml"));
+        List<Map<String, Object>> inputs = (List<Map<String, Object>>) menu.get("inputs");
+
+        // La catégorie arrive par le contexte, pas en dur : c'est ce qui rend le
+        // menu réutilisable — et ce qui peuple le sélecteur de Preview context.
+        Map<String, Object> items = inputs.stream()
+                .filter(i -> "items".equals(i.get("name"))).findFirst().orElseThrow();
+        Map<String, Object> source = (Map<String, Object>) items.get("source");
+        assertEquals("boutique:items", source.get("ref"));
+        assertEquals(Map.of("category", "{category}"), source.get("filter"));
+    }
+
+    /**
+     * LE test de la décision : les articles de TOUTES les catégories vivent dans
+     * le même élément, et deux d'entre eux visent le slot 20. Ce n'est pas une
+     * collision — le filtre fait qu'un seul existe à la fois — mais c'est ce qui
+     * rend ces placements illisibles sans Preview context.
+     */
+    @Test
+    void everyCategoryPlacesItsItemsInTheSameElement(@TempDir File root) throws Exception {
+        File projectDir = migrate(root);
+
+        Map<String, Object> places = placesOf(yaml(new File(projectDir, "menus/shop_category.yaml")), 0);
         assertEquals("items", places.get("source"));
         assertEquals("id", places.get("key_field"));
         assertEquals(List.of(
                 Map.of("key", "cle_legendaire", "page", 0, "position", 20),
-                Map.of("key", "cle_rare", "page", 1, "position", 29)),
+                Map.of("key", "cle_rare", "page", 1, "position", 29),
+                Map.of("key", "kit_mineur", "page", 0, "position", 20)),
                 places.get("placements"));
     }
 
-    /**
-     * Le menu principal : UN élément par catégorie, chacun ne plaçant que la
-     * sienne. Un seul élément pour les 7 aurait été plus court, mais le clic
-     * serait commun — et `open_menu shop_{cat.id}` ne parse pas : le lexer du
-     * DSL n'accepte que [A-Za-z_] dans un identifiant, pas un template. Un
-     * élément par catégorie donne à chacune son clic littéral tout en gardant
-     * nom et icône liés à la donnée.
-     */
     @Test
     @SuppressWarnings("unchecked")
-    void theMainMenuPlacesCategoriesAndOpensTheirMenu(@TempDir File root) throws Exception {
+    void theMainMenuPlacesCategoriesAndPassesTheContext(@TempDir File root) throws Exception {
         File projectDir = migrate(root);
 
         Map<String, Object> menu = yaml(new File(projectDir, "menus/shop_main.yaml"));
         List<Map<String, Object>> elements = (List<Map<String, Object>>) menu.get("elements");
-        assertEquals(2, elements.size());
+        assertEquals(1, elements.size(), "un seul élément suffit : le lien est dynamique");
 
-        Map<String, Object> first = elements.get(0);
-        Map<String, Object> places = (Map<String, Object>) first.get("places");
-        assertEquals("cats", places.get("source"));
-        assertEquals(List.of(Map.of("key", "les_cles", "page", 0, "position", 20)),
-                places.get("placements"));
+        assertEquals(List.of(
+                Map.of("key", "les_cles", "page", 0, "position", 20),
+                Map.of("key", "les_kits", "page", 0, "position", 28)),
+                placesOf(menu, 0).get("placements"));
 
-        Map<String, Object> appearance = ((List<Map<String, Object>>) first.get("appearances")).get(0);
-        assertEquals("{cat.name}", appearance.get("title"));
+        // Le template tient dans une chaîne entre guillemets — contrairement à un
+        // identifiant de menu, que le lexer du DSL refuse d'interpoler.
+        Map<String, Object> appearance = ((List<Map<String, Object>>) elements.get(0).get("appearances")).get(0);
         Map<String, Object> click = (Map<String, Object>) appearance.get("click");
-        assertEquals("open_menu shop_les_cles", click.get("left"));
-
-        Map<String, Object> second = (Map<String, Object>) ((List<Map<String, Object>>) elements.get(1).get("appearances")).get(0);
-        assertEquals("open_menu shop_les_kits",
-                ((Map<String, Object>) second.get("click")).get("left"));
+        assertEquals("open_menu shop_category with category=\"{cat.id}\" category_name=\"{cat.name}\"",
+                click.get("left"));
     }
 
-    /** Le manifeste doit lister les menus générés, sinon le plugin ne les lit pas. */
     @Test
     @SuppressWarnings("unchecked")
-    void theManifestListsEveryGeneratedMenu(@TempDir File root) throws Exception {
+    void theManifestListsBothMenus(@TempDir File root) throws Exception {
         File projectDir = migrate(root);
 
         Map<String, Object> manifest = yaml(new File(projectDir, "manifest.yaml"));
         Map<String, Object> files = (Map<String, Object>) manifest.get("files");
-        assertEquals(List.of("shop_main", "shop_les_cles", "shop_les_kits"), files.get("menus"));
-        // Le menu paginé bundlé n'a plus de raison d'être.
-        assertFalse(new File(projectDir, "menus/shop_category.yaml").exists());
+        assertEquals(List.of("shop_main", "shop_category"), files.get("menus"));
     }
 
     /** La position est une affaire de MENU : elle ne pollue pas la donnée. */
