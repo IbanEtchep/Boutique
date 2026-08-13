@@ -7,22 +7,29 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.HashMap;
+import java.io.File;
 import java.util.Map;
-import java.util.UUID;
 
 /**
- * /boutiqueadmin additem <id> <prix> [catégorie] — capture l'item TENU EN MAIN
- * comme article de boutique. Le stack exact (NBT/enchants/CMD) part au backend
- * via le WS (message module `boutique_additem`) ; le backend mute le projet
- * boutique (item capturé + article icon=item:<id>), commit et rebroadcast — la
- * boutique se recharge en jeu en quelques secondes. Le plugin n'écrit JAMAIS
- * les fichiers projet lui-même (ADR captured-items-and-module-field-kit §3).
+ * /boutiqueadmin additem &lt;id&gt; &lt;prix&gt; [catégorie] — capture l'item TENU EN MAIN
+ * comme article de boutique.
+ *
+ * Le stack exact (NBT/enchants/CMD) et l'article partaient autrefois au backend
+ * via le message module `boutique_additem` ; le backend mutait sa copie du
+ * project et rebroadcastait. Le backend ne stocke plus aucun contenu (ADR
+ * Artisan `server-disk-only-storage`) : on écrit désormais **directement** dans
+ * la racine que ce module possède, et le scan disque d'Artisan recharge à chaud.
+ *
+ * Le fichier écrit EST la vérité — il n'y a rien à pousser derrière.
  */
 public final class BoutiqueAdminCommand implements CommandExecutor {
     private final ArtisanAPI api;
+    private final File projectDir;
 
-    public BoutiqueAdminCommand(ArtisanAPI api) { this.api = api; }
+    public BoutiqueAdminCommand(ArtisanAPI api, File projectDir) {
+        this.api = api;
+        this.projectDir = projectDir;
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -55,17 +62,21 @@ public final class BoutiqueAdminCommand implements CommandExecutor {
             return true;
         }
 
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("request_id", UUID.randomUUID().toString());
-        payload.put("item_id", args[1]);
-        payload.put("price", price);
-        if (args.length >= 4) payload.put("category", args[3]);
-        payload.put("stack_yaml", api.getItems().serialize(held));
-        payload.put("display", api.getItems().describe(held));
-        api.getMessages().send("boutique_additem", payload);
+        Map<String, Object> display = api.getItems().describe(held);
+        CapturedItemWriter.Result res = CapturedItemWriter.addItem(
+                projectDir,
+                args[1],
+                price,
+                args.length >= 4 ? args[3] : null,
+                api.getItems().serialize(held),
+                display);
 
-        player.sendMessage("§aCapture envoyée — « " + args[1] + " » (" + price
-                + ") arrive en boutique dans quelques secondes. Complète les commandes d'achat dans l'éditeur.");
+        if (!res.ok()) {
+            player.sendMessage("§cCapture impossible : " + res.error());
+            return true;
+        }
+        player.sendMessage("§a« " + args[1] + " » (" + price + ") ajouté à la boutique. "
+                + "Complète les commandes d'achat dans l'éditeur.");
         return true;
     }
 }
