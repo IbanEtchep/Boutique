@@ -17,18 +17,16 @@ elements:
   - id: grid
     positions: "10-43"
     iterates: { source: items, alias: item }
-    appearances:
-      - material: "{item.icon}"
-        title: "{item.name}"
-        lore:
-          - "{item.lore}"
-          - "§ePrix : {item.final_price} tokens"
-        click:
-          left: 'open_dialog confirm_purchase with item_id="{item.id}" item_name="{item.name}" item_price="{item.final_price}"'
+    material: "{item.icon}"
+    title: "{item.name}"
+    lore:
+      - "{item.lore}"
+      - "§ePrix : {item.final_price} tokens"
+    click:
+      left: 'open_dialog confirm_purchase with item_id="{item.id}" item_name="{item.name}" item_price="{item.final_price}"'
   - id: back
     positions: "49"
-    appearances:
-      - material: ARROW
-        title: "§7Retour"
-        click:
-          left: 'open_menu shop_main'
+    material: ARROW
+    title: "§7Retour"
+    click:
+      left: 'open_menu shop_main'

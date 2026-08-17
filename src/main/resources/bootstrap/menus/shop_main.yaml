@@ -12,8 +12,7 @@ elements:
   - id: grid
     positions: "10-43"
     iterates: { source: cats, alias: cat }
-    appearances:
-      - material: "{cat.icon}"
-        title: "{cat.name}"
-        click:
-          left: 'open_menu shop_category with category="{cat.id}" category_name="{cat.name}"'
+    material: "{cat.icon}"
+    title: "{cat.name}"
+    click:
+      left: 'open_menu shop_category with category="{cat.id}" category_name="{cat.name}"'
