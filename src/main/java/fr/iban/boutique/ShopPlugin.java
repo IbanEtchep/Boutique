@@ -100,6 +100,13 @@ public final class ShopPlugin extends JavaPlugin {
         File projectDir = new File(getDataFolder(), "editor");
         api.getProjectRoots().register("boutique_shop", projectDir);
 
+        // Ce qui suit ÉCRIT dans cette racine. Le core reprend son instantané au
+        // moment de l'enregistrement ci-dessus — donc sur un dossier encore vide
+        // — et ne peut pas deviner nos écritures ensuite : sans la déclaration en
+        // fin de méthode, l'éditeur montre un project vide jusqu'à un
+        // `/artisan reload` tapé à la main (constaté en prod le 2026-08-17).
+        boolean wroteContent = false;
+
         // Contenu par défaut, ou catalogue repris du config.yml MenuAPI. AVANT
         // les migrateurs : c'est ce bootstrap qui pose le boutique/shop.yaml
         // migré, que la conversion ci-dessous bascule dans la Table au même
@@ -112,9 +119,10 @@ public final class ShopPlugin extends JavaPlugin {
                         ? LegacyConfigMigrator.migrate(legacyRaw)
                         : Optional.empty();
                 if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
+                    wroteContent = true;
                     getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/editor"
                             + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
-                            + " — /artisan reload puis /artisan pushLocal boutique_shop pour synchroniser.");
+                            + ".");
                 }
             } catch (IOException e) {
                 getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
@@ -127,6 +135,7 @@ public final class ShopPlugin extends JavaPlugin {
         // reloadRepo lise déjà le nouveau format ; la sync files-first
         // d'Artisan auto-pushe ensuite le nouvel arbre (LOCAL_ONLY).
         if (fr.iban.boutique.artisan.ShopDataMigrator.migrateIfNeeded(projectDir)) {
+            wroteContent = true;
             getLogger().warning("Catalogue migré vers data/categories/ (models déclarés) — "
                     + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
         }
@@ -138,7 +147,16 @@ public final class ShopPlugin extends JavaPlugin {
                 projectDir,
                 getConfig().getString("placeholders.price-display"),
                 getConfig().getString("placeholders.discount-price-display"))) {
+            wroteContent = true;
             getLogger().info("Formats de prix repris dans data/shop_settings.yaml (éditables depuis l'éditeur).");
+        }
+
+        // On DÉCLARE ce qu'on vient d'écrire. Le core sert un instantané pris au
+        // chargement (sémantique de reload) : sans cet appel, le contenu qu'on
+        // vient de poser reste invisible en jeu comme dans l'éditeur, et l'admin
+        // croit son installation ratée.
+        if (wroteContent) {
+            api.getProject().reload();
         }
 
         this.shopRepo = new ShopRepo();
