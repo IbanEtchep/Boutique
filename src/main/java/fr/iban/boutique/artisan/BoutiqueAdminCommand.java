@@ -20,7 +20,11 @@ import java.util.Map;
  * Artisan `server-disk-only-storage`) : on écrit désormais **directement** dans
  * la racine que ce module possède, et le scan disque d'Artisan recharge à chaud.
  *
- * Le fichier écrit EST la vérité — il n'y a rien à pousser derrière.
+ * Le fichier écrit EST la vérité — il n'y a rien à pousser derrière. Reste à le
+ * DÉCLARER : le core sert un instantané pris au chargement (sémantique de
+ * reload), donc une écriture non annoncée resterait invisible au serveur qui
+ * tourne comme à l'éditeur jusqu'à un `/artisan reload` tapé à la main. On est
+ * le seul à savoir qu'on a écrit, c'est donc à nous de le dire.
  */
 public final class BoutiqueAdminCommand implements CommandExecutor {
     private final ArtisanAPI api;
@@ -75,6 +79,7 @@ public final class BoutiqueAdminCommand implements CommandExecutor {
             player.sendMessage("§cCapture impossible : " + res.error());
             return true;
         }
+        api.getProject().reload();
         player.sendMessage("§a« " + args[1] + " » (" + price + ") ajouté à la boutique. "
                 + "Complète les commandes d'achat dans l'éditeur.");
         return true;
