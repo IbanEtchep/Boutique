@@ -6,7 +6,7 @@ public final class ShopItem {
 
     private final String id;
     private final String name;
-    private final String icon;
+    private final Object icon;
     private final double price;
     private final int discount;
     private final List<String> lore;
@@ -14,7 +14,7 @@ public final class ShopItem {
     private final String actions;
     private final ShopCategory category;
 
-    public ShopItem(String id, String name, String icon, double price, int discount,
+    public ShopItem(String id, String name, Object icon, double price, int discount,
                      List<String> lore, String actions, ShopCategory category) {
         this.id = id;
         this.name = name;
@@ -34,7 +34,7 @@ public final class ShopItem {
         return name;
     }
 
-    public String getIcon() {
+    public Object getIcon() {
         return icon;
     }
 

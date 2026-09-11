@@ -43,7 +43,7 @@ public final class BoutiqueModule implements ArtisanModule {
                 List.of(
                         new DataSourceField("id", FieldKind.STRING, null),
                         new DataSourceField("name", FieldKind.STRING, null),
-                        new DataSourceField("icon", FieldKind.STRING, null),
+                        new DataSourceField("icon", FieldKind.ITEM, null),
                         new DataSourceField("items", FieldKind.LIST, null)),
                 null,
                 Stability.STATIC,
@@ -57,7 +57,7 @@ public final class BoutiqueModule implements ArtisanModule {
                 List.of(
                         new DataSourceField("id", FieldKind.STRING, null),
                         new DataSourceField("name", FieldKind.STRING, null),
-                        new DataSourceField("icon", FieldKind.STRING, null),
+                        new DataSourceField("icon", FieldKind.ITEM, null),
                         new DataSourceField("category", FieldKind.STRING, null),
                         new DataSourceField("price", FieldKind.NUMBER, null),
                         new DataSourceField("final_price", FieldKind.INTEGER, null),

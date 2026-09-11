@@ -38,12 +38,12 @@ public final class ShopRepo {
                 Map<String, Object> c = (Map<String, Object>) rawCat;
                 List<ShopItem> items = new ArrayList<>();
                 ShopCategory cat = new ShopCategory(
-                        str(c, "id"), str(c, "name"), str(c, "icon"), asInt(c.get("discount"), 0), items);
+                        str(c, "id"), str(c, "name"), c.getOrDefault("icon", ""), asInt(c.get("discount"), 0), items);
                 for (Object rawItem : asList(c.get("items"))) {
                     if (!(rawItem instanceof Map)) continue;
                     Map<String, Object> i = (Map<String, Object>) rawItem;
                     ShopItem item = new ShopItem(
-                            str(i, "id"), str(i, "name"), str(i, "icon"),
+                            str(i, "id"), str(i, "name"), i.getOrDefault("icon", ""),
                             asDouble(i.get("price")), asInt(i.get("discount"), 0),
                             strList(i.get("lore")), actionsOf(i), cat);
                     items.add(item);
@@ -81,7 +81,7 @@ public final class ShopRepo {
             } catch (RuntimeException e) { continue; }
             List<ShopItem> items = new ArrayList<>();
             ShopCategory cat = new ShopCategory(
-                    str(c, "id"), ltext(lang, str(c, "name")), str(c, "icon"),
+                    str(c, "id"), ltext(lang, str(c, "name")), c.getOrDefault("icon", ""),
                     asInt(c.get("discount"), 0), items);
             for (Object rawItem : asList(c.get("items"))) {
                 if (!(rawItem instanceof Map)) continue;
@@ -89,7 +89,7 @@ public final class ShopRepo {
                 List<String> lore = new ArrayList<>();
                 for (String key : strList(i.get("lore"))) lore.add(ltext(lang, key));
                 ShopItem item = new ShopItem(
-                        str(i, "id"), ltext(lang, str(i, "name")), str(i, "icon"),
+                        str(i, "id"), ltext(lang, str(i, "name")), i.getOrDefault("icon", ""),
                         asDouble(i.get("price")), asInt(i.get("discount"), 0),
                         List.copyOf(lore), actionsOf(i), cat);
                 items.add(item);

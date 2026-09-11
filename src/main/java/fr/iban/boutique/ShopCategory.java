@@ -6,11 +6,11 @@ public final class ShopCategory {
 
     private final String id;
     private final String name;
-    private final String icon;
+    private final Object icon;
     private final int discount;
     private final List<ShopItem> items;
 
-    public ShopCategory(String id, String name, String icon, int discount, List<ShopItem> items) {
+    public ShopCategory(String id, String name, Object icon, int discount, List<ShopItem> items) {
         this.id = id;
         this.name = name;
         this.icon = icon;
@@ -26,7 +26,7 @@ public final class ShopCategory {
         return name;
     }
 
-    public String getIcon() {
+    public Object getIcon() {
         return icon;
     }
 
