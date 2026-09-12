@@ -81,7 +81,7 @@ public final class ShopRepo {
             } catch (RuntimeException e) { continue; }
             List<ShopItem> items = new ArrayList<>();
             ShopCategory cat = new ShopCategory(
-                    str(c, "id"), ltext(lang, str(c, "name")), c.getOrDefault("icon", ""),
+                    str(c, "id"), ltext(lang, str(c, "name")), translateIcon(c.getOrDefault("icon", ""), lang, "sources.categories." + str(c, "id").toLowerCase() + ".icon"),
                     asInt(c.get("discount"), 0), items);
             for (Object rawItem : asList(c.get("items"))) {
                 if (!(rawItem instanceof Map)) continue;
@@ -89,7 +89,7 @@ public final class ShopRepo {
                 List<String> lore = new ArrayList<>();
                 for (String key : strList(i.get("lore"))) lore.add(ltext(lang, key));
                 ShopItem item = new ShopItem(
-                        str(i, "id"), ltext(lang, str(i, "name")), i.getOrDefault("icon", ""),
+                        str(i, "id"), ltext(lang, str(i, "name")), translateIcon(i.getOrDefault("icon", ""), lang, "sources.categories." + str(c, "id").toLowerCase() + ".items" + (items.isEmpty() ? "" : "_" + (items.size() + 1)) + ".icon"),
                         asDouble(i.get("price")), asInt(i.get("discount"), 0),
                         List.copyOf(lore), actionsOf(i), cat);
                 items.add(item);
@@ -100,6 +100,28 @@ public final class ShopRepo {
         this.categories = List.copyOf(cats);
         this.itemsById = Map.copyOf(byId);
         this.wholeShopDiscount = shopDiscount;
+    }
+
+    private static Object translateIcon(Object raw, Map<String, String> lang, String address) {
+        if (!(raw instanceof Map<?, ?> map)) return raw;
+        Map<String, Object> out = new LinkedHashMap<>();
+        map.forEach((key, value) -> {
+            String name = key.toString();
+            Object next = value;
+            if (name.equals("extends")) next = translateIcon(value, lang, address + ".extends");
+            else if (name.equals("title") || name.equals("lore")) {
+                if (value instanceof List<?> lines) {
+                    List<String> translated = new ArrayList<>();
+                    for (int n = 0; n < lines.size(); n++) {
+                        String text = String.valueOf(lines.get(n));
+                        translated.add(lang.getOrDefault(address + "." + name + (n == 0 ? "" : "_" + (n + 1)), ltext(lang, text)));
+                    }
+                    next = translated;
+                } else if (value instanceof String text) next = lang.getOrDefault(address + "." + name, ltext(lang, text));
+            }
+            out.put(name, next);
+        });
+        return out;
     }
 
     private static String ltext(Map<String, String> lang, String key) {

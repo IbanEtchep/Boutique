@@ -6,6 +6,25 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ShopIconValueTest {
+    @Test void translatesNestedIconTextWithoutChangingItemReferences() {
+        var yaml = """
+            id: weapons
+            items:
+              - id: sword
+                icon:
+                  extends: {material: 'item:original', title: Original}
+                  lore: ['{base.lore}', Offer]
+                price: 10
+            """;
+        var repo = new ShopRepo();
+        repo.loadFromDataTable(path -> yaml, List.of("weapons.yaml"), Map.of(
+            "sources.categories.weapons.items.icon.extends.title", "Original traduit",
+            "sources.categories.weapons.items.icon.lore_2", "Offre"), 0);
+        var icon = (Map<?, ?>) repo.findItem("sword").orElseThrow().getIcon();
+        assertEquals(Map.of("material", "item:original", "title", "Original traduit"), icon.get("extends"));
+        assertEquals(List.of("{base.lore}", "Offre"), icon.get("lore"));
+    }
+
     @Test void preservesStructuredIconsForCategoriesAndProducts() {
         var yaml = """
             id: weapons
