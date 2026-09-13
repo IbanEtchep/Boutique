@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/** Écrit le project par défaut boutique_shop dans plugins/Artisan/projects/ s'il n'existe pas. */
+/** Écrit le project par défaut editor dans plugins/Boutique/ s'il n'existe pas. */
 public final class Bootstrapper {
     /**
      * Catalogue EXEMPLE (ADR composable-data-models §8) — la Table déclarée
@@ -36,9 +36,9 @@ public final class Bootstrapper {
     /**
      * @return true si le bootstrap a écrit quelque chose.
      *
-     * Écrit dans un répertoire temporaire sibling ({@code .boutique_shop.tmp}) puis rename
-     * atomique vers {@code boutique_shop} : une écriture partielle qui échoue ne laisse jamais
-     * un {@code boutique_shop/} à moitié rempli qui bloquerait tout retry futur (guard
+     * Écrit dans un répertoire temporaire sibling ({@code .editor.tmp}) puis rename
+     * atomique vers {@code editor} : une écriture partielle qui échoue ne laisse jamais
+     * un {@code editor/} à moitié rempli qui bloquerait tout retry futur (guard
      * {@code projectDir.exists()}).
      */
     public static boolean bootstrapIfAbsent(File projectDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {

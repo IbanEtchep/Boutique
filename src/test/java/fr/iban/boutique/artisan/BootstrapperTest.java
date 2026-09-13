@@ -31,6 +31,7 @@ class BootstrapperTest {
 
         assertTrue(wrote);
         assertTrue(projectDir.isDirectory());
+        assertFalse(Files.readString(new File(projectDir, "manifest.yaml").toPath()).contains("project_id:"));
         for (String res : EXPECTED_FILES) {
             File f = new File(projectDir, res);
             assertTrue(f.isFile(), () -> res + " should exist");
@@ -64,6 +65,7 @@ class BootstrapperTest {
 
         assertTrue(wrote);
         assertTrue(projectDir.isDirectory());
+        assertFalse(Files.readString(new File(projectDir, "manifest.yaml").toPath()).contains("project_id:"));
         for (String res : EXPECTED_FILES) {
             assertTrue(new File(projectDir, res).isFile());
         }

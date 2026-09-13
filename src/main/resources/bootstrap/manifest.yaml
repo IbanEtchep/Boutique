@@ -1,5 +1,4 @@
 schema: manifest/v1
-project_id: boutique_shop
 module: boutique
 default_lang: fr
 languages: [fr]

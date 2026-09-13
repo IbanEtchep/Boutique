@@ -20,7 +20,7 @@ import java.util.UUID;
  * Cette mutation partait autrefois au backend, qui patchait sa copie du project
  * puis rebroadcastait. Le backend ne stocke plus aucun contenu (ADR Artisan
  * `server-disk-only-storage`) : le module possède sa racine
- * (`plugins/Boutique/editor/`, enregistrée comme `boutique_shop`), il y écrit
+ * (`plugins/Boutique/editor/`, enregistrée comme `boutique_addon`), il y écrit
  * lui-même, et le scan disque d'Artisan recharge à chaud — exactement comme une
  * édition faite à la main ou par un agent.
  *

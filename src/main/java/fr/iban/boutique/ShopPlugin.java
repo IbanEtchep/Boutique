@@ -90,7 +90,7 @@ public final class ShopPlugin extends JavaPlugin {
         var api = reg.getProvider();
         this.artisanApi = api;
 
-        // Le project boutique_shop vit dans le dossier plugin de CET add-on, pas dans
+        // Le project boutique_addon vit dans le dossier plugin de CET add-on, pas dans
         // le core plugins/Artisan/projects/ — le core le lit/synchronise via le root
         // enregistré (ADR addon-owned-project-roots). Le dossier plugins/Boutique/editor/
         // contient directement le contenu géré depuis l'éditeur web (dossier dédié :
@@ -98,7 +98,7 @@ public final class ShopPlugin extends JavaPlugin {
         // racine). Enregistrer AVANT hasContent pour que le check voie un project déjà
         // bootstrappé aux démarrages suivants.
         File projectDir = new File(getDataFolder(), "editor");
-        api.getProjectRoots().register("boutique_shop", projectDir);
+        api.getProjectRoots().register("boutique_addon", projectDir);
 
         // Ce qui suit ÉCRIT dans cette racine. Le core reprend son instantané au
         // moment de l'enregistrement ci-dessus — donc sur un dossier encore vide

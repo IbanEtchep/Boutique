@@ -29,7 +29,7 @@ public class TransactionManager {
                 // Project en portée : les actions d'un article peuvent porter `@clé`,
                 // résolue dans les lang/ du project boutique.
                 plugin.getArtisanApi().getActions().execute(
-                        player, item.getActions(), java.util.Map.of(), "boutique_shop");
+                        player, item.getActions(), java.util.Map.of(), "boutique_addon");
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));
                 databaseManager.addPurchaseHistory(player.getUniqueId(), item);
                 databaseManager.removeTokens(player.getUniqueId(), price);
