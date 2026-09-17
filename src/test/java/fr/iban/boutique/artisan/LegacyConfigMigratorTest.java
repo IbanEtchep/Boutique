@@ -61,7 +61,7 @@ class LegacyConfigMigratorTest {
         String out = files.get("boutique/shop.yaml");
         // Le stack sérialisé devient un item capturé, référencé en icon universel.
         assertTrue(out.contains("icon: item:ci_armes"), out);
-        assertTrue(out.contains("icon: item:ci_epee_en_diamant"), out);
+        assertTrue(out.contains("extends: item:ci_epee_en_diamant"), out);
         String captured = files.get("items/ci_epee_en_diamant.yml");
         assertNotNull(captured, String.valueOf(files.keySet()));
         assertTrue(captured.contains("item:"), captured);

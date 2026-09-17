@@ -116,7 +116,7 @@ public final class CapturedItemWriter {
                 entry.put("icon", "item:" + ciId);
                 entry.put("price", price);
                 entry.put("discount", 0);
-                entry.put("lore", new ArrayList<String>());
+
                 entry.put("actions", "");
                 items.add(entry);
             }

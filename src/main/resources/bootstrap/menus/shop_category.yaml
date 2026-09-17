@@ -20,7 +20,7 @@ elements:
     material: "{item.icon}"
     title: "{item.name}"
     lore:
-      - "{item.lore}"
+
       - "§ePrix : {item.final_price} tokens"
     click:
       left: 'open_dialog confirm_purchase with item_id="{item.id}" item_name="{item.name}" item_price="{item.final_price}"'

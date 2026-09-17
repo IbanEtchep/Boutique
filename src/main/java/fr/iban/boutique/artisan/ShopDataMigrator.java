@@ -77,7 +77,7 @@ public final class ShopDataMigrator {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", catId);
             row.put("name", literal(cat.get("name"), catId));
-            row.put("icon", String.valueOf(cat.getOrDefault("icon", "CHEST")));
+            row.put("icon", cat.getOrDefault("icon", "CHEST"));
             row.put("discount", intOf(cat.get("discount")));
 
             List<Map<String, Object>> items = new ArrayList<>();
@@ -88,7 +88,7 @@ public final class ShopDataMigrator {
                 String itemId = String.valueOf(src.getOrDefault("id", "item_" + (i + 1)));
                 item.put("id", itemId);
                 item.put("name", literal(src.get("name"), itemId));
-                item.put("icon", String.valueOf(src.getOrDefault("icon", "BARRIER")));
+                item.put("icon", src.getOrDefault("icon", "BARRIER"));
                 item.put("price", src.getOrDefault("price", 0));
                 item.put("discount", intOf(src.get("discount")));
                 List<String> loreLines = new ArrayList<>();
@@ -96,6 +96,7 @@ public final class ShopDataMigrator {
                     loreLines.add(String.valueOf(l));
                 }
                 item.put("lore", loreLines);
+                CatalogIconMigrator.migrateItem(item);
                 item.put("actions", actionsOf(src));
                 items.add(item);
             }
@@ -195,7 +196,7 @@ public final class ShopDataMigrator {
         grid.put("id", "grid");
         grid.put("places", places("items", "item", itemPlacements));
         grid.put("appearances", List.of(appearance("{item.icon}", "{item.name}",
-                List.of("{item.lore}", "{item.price_display}"),
+                List.of("{item.price_display}"),
                 "open_dialog confirm_purchase with item_id=\"{item.id}\" "
                         + "item_name=\"{item.name}\" item_price=\"{item.final_price}\"")));
 

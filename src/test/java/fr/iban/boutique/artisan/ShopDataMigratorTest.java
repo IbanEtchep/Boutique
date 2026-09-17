@@ -85,8 +85,9 @@ class ShopDataMigratorTest {
         List<Map<String, Object>> items = (List<Map<String, Object>>) armes.get("items");
         assertEquals(1, items.size());
         assertEquals("Épée légendaire", items.get(0).get("name"));
-        assertEquals("item:ci_epee", items.get(0).get("icon"));
-        assertEquals(List.of("Tranchante", "Rare"), items.get(0).get("lore"));
+        assertEquals("item:ci_epee", ((Map<?, ?>) items.get(0).get("icon")).get("extends"));
+        assertFalse(items.get(0).containsKey("lore"));
+        assertEquals(List.of("Tranchante", "Rare"), ((Map<?, ?>) items.get(0).get("icon")).get("lore"));
         assertEquals("give_item material=DIAMOND_SWORD count=1", items.get(0).get("actions"));
 
         // Settings: a bare mapping — the file IS the value.

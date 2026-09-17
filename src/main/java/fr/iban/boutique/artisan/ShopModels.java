@@ -8,15 +8,15 @@ import java.util.Map;
  * The boutique's declared Data models (ADR composable-data-models §4):
  * model/v1 documents passed verbatim to {@code api.getModels().declare(...)}.
  * The editor renders the schema-driven form from these (master-detail catalog,
- * localized name/lore, locked icon) — the shape is read-only for the admin and
- * versioned with this plugin. Version 1; ship declarative migrations alongside
+ * localized name and item icon) — the shape is read-only for the admin and
+ * versioned with this plugin. Version 2 moves lore into icon via CatalogIconMigrator; ship migrations alongside
  * any future shape change.
  */
 public final class ShopModels {
     private ShopModels() {}
 
     /** Current declared version of both models. */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     private static Map<String, Object> kind(String kind) {
         return Map.of("kind", kind);
@@ -46,7 +46,7 @@ public final class ShopModels {
                 field("icon", kind("item"), Map.of()),
                 field("price", kind("number"), Map.of("required", true, "min", 0)),
                 field("discount", kind("integer"), Map.of("default", 0, "min", 0, "max", 100)),
-                field("lore", Map.of("kind", "list", "of", kind("ltext")), Map.of()),
+
                 field("actions", kind("actions"), Map.of("help", "Executed after payment (Action DSL)."))
         ));
         return doc;

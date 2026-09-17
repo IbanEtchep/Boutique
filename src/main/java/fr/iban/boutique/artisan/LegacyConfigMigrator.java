@@ -107,6 +107,7 @@ public final class LegacyConfigMigrator {
                     item.put("price", i.getOrDefault("price", 0));
                     item.put("discount", i.getOrDefault("discount", 0));
                     item.put("lore", dropPricePlaceholders(itemDisplay.get("lore")));
+                    CatalogIconMigrator.migrateItem(item);
                     item.put("actions", migrateCommands(i.getOrDefault("buycommands", List.of())));
                     putPlacement(item, rawItemDisplay);
                     items.add(item);

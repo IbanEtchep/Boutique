@@ -95,7 +95,8 @@ class LegacyRealWorldConfigTest {
     @Test
     void thePriceDisplayPlaceholderLineIsDropped() {
         Map<String, Object> item = ((List<Map<String, Object>>) firstCategory().get("items")).get(0);
-        List<String> lore = (List<String>) item.get("lore");
+        assertFalse(item.containsKey("lore"));
+        List<String> lore = (List<String>) ((Map<?, ?>) item.get("icon")).get("lore");
         assertEquals(1, lore.size(), () -> "le placeholder de prix doit sauter, reste: " + lore);
         assertTrue(lore.get(0).contains("1 clé qui vous donne la chance"));
     }

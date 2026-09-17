@@ -51,8 +51,7 @@ class ShopModelsTest {
         Map<String, Object> name = fields.stream().filter(f -> f.get("name").equals("name")).findFirst().orElseThrow();
         assertEquals(Map.of("kind", "ltext"), name.get("type"));
 
-        Map<String, Object> lore = fields.stream().filter(f -> f.get("name").equals("lore")).findFirst().orElseThrow();
-        assertEquals(Map.of("kind", "list", "of", Map.of("kind", "ltext")), lore.get("type"));
+        assertTrue(fields.stream().noneMatch(f -> f.get("name").equals("lore")));
 
         Map<String, Object> icon = fields.stream().filter(f -> f.get("name").equals("icon")).findFirst().orElseThrow();
         // Icon stays EDITABLE in the form (user feedback 2026-07-26) — additem

@@ -140,6 +140,11 @@ public final class ShopPlugin extends JavaPlugin {
                     + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
         }
 
+        if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir)) {
+            wroteContent = true;
+            getLogger().info("Lore du catalogue déplacé dans les icônes (sauvegarde : catalog-icon-backup).");
+        }
+
         // One-shot (ADR yaml-assisted-editing) : les formats de prix vivaient
         // dans config.yml où plus aucun code ne les lisait — ils deviennent des
         // réglages éditables du project, typés par le model déclaré.
