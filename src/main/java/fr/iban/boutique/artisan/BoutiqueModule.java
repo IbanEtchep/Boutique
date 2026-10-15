@@ -45,7 +45,6 @@ public final class BoutiqueModule implements ArtisanModule {
                         new DataSourceField("name", FieldKind.STRING, null),
                         new DataSourceField("icon", FieldKind.ITEM, null),
                         new DataSourceField("items", FieldKind.LIST, null)),
-                null,
                 Stability.STATIC,
                 "id"));
         api.getDataSources().register(new DataSourceDeclaration(
@@ -65,7 +64,6 @@ public final class BoutiqueModule implements ArtisanModule {
                         // `{item.price_display}` au lieu de recomposer le texte.
                         new DataSourceField("price_display", FieldKind.STRING, null),
                         new DataSourceField("lore", FieldKind.STRING, null)),
-                null,
                 Stability.STATIC,
                 "id"));
         api.getCommands().register(new CommandDeclaration("boutique:buy", this::handleBuy));
