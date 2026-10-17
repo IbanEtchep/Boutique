@@ -2,6 +2,10 @@ package fr.iban.boutique.artisan;
 
 import fr.iban.boutique.ShopPlugin;
 import net.artisanmc.modules.api.*;
+import net.artisanmc.modules.api.action.*;
+import net.artisanmc.modules.api.command.*;
+import net.artisanmc.modules.api.datasource.*;
+import net.artisanmc.modules.api.model.*;
 import org.bukkit.entity.Player;
 
 import java.util.*;

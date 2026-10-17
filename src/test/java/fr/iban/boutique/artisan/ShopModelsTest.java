@@ -1,6 +1,6 @@
 package fr.iban.boutique.artisan;
 
-import net.artisanmc.modules.api.ModelRegistry;
+import net.artisanmc.modules.api.model.ModelRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
