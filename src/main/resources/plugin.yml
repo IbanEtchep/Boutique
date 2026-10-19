@@ -1,5 +1,5 @@
 name: Boutique
-version: 2.1.0
+version: ${version}
 main: fr.iban.boutique.ShopPlugin
 api-version: '1.21'
 depend: [Artisan]
