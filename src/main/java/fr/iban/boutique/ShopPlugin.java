@@ -25,6 +25,13 @@ import java.util.UUID;
 
 public final class ShopPlugin extends JavaPlugin {
 
+    /** Première API avec les dossiers de module ({@code ProjectRootRegistry.moduleFolder}). */
+    public static final String MIN_API_VERSION = "2.8.0";
+    /** Dossier du module sous plugins/Artisan/modules/, l'id de project enregistré avant. */
+    public static final String PROJECT_ID = "boutique_addon";
+    /** Ancienne racine, sous plugins/Boutique/, déplacée une fois dans le dossier du module. */
+    static final String LEGACY_PROJECT_DIR = "editor";
+
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private ShopRepo shopRepo;
@@ -82,25 +89,27 @@ public final class ShopPlugin extends JavaPlugin {
         }
 
         var reg = getServer().getServicesManager().getRegistration(net.artisanmc.modules.api.ArtisanAPI.class);
-        if (reg == null) {
-            getLogger().severe("Artisan introuvable — Boutique désactivée.");
+        if (reg == null || !reg.getProvider().isCompatibleWith(MIN_API_VERSION)) {
+            getLogger().severe("Boutique a besoin d'Artisan avec l'API " + MIN_API_VERSION + " ou plus récente (trouvé : "
+                    + (reg == null ? "pas d'Artisan" : reg.getProvider().getApiVersion()) + ") — Boutique désactivée.");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
         var api = reg.getProvider();
         this.artisanApi = api;
 
-        // Le project boutique_addon vit dans le dossier plugin de CET add-on, pas dans
-        // le core plugins/Artisan/projects/ — le core le lit/synchronise via le root
-        // enregistré (ADR addon-owned-project-roots). Le dossier plugins/Boutique/editor/
-        // contient directement le contenu géré depuis l'éditeur web (dossier dédié :
-        // le sweep de sync supprime tout fichier hors bundle, donc jamais le dataFolder
-        // racine). Enregistrer AVANT hasContent pour que le check voie un project déjà
-        // bootstrappé aux démarrages suivants.
-        File projectDir = new File(getDataFolder(), "editor");
-        api.getProjectRoots().register("boutique_addon", projectDir);
+        // Le contenu de la boutique vit dans plugins/Artisan/modules/boutique_addon/,
+        // le dossier du module (design « un dossier = un module »). Le nom du dossier
+        // reste l'ancien id de project : ses Versions et brouillons (clé
+        // `addon:boutique_addon`) et les références qualifiées suivent. Un ancien
+        // plugins/Boutique/editor/ y est déplacé une fois par Artisan ; tant que les
+        // deux dossiers ont des fichiers, l'ancien reste lu et le log le dit.
+        // AVANT hasContent pour que le check voie un project déjà bootstrappé.
+        File legacyDir = new File(getDataFolder(), LEGACY_PROJECT_DIR);
+        File projectDir = api.getProjectRoots().moduleFolder(
+                PROJECT_ID, fr.iban.boutique.artisan.BoutiqueModule.ID, legacyDir.isDirectory() ? legacyDir : null);
 
-        // Ce qui suit ÉCRIT dans cette racine. Le core reprend son instantané au
+        // Ce qui suit ÉCRIT dans ce dossier. Le core reprend son instantané au
         // moment de l'enregistrement ci-dessus — donc sur un dossier encore vide
         // — et ne peut pas deviner nos écritures ensuite : sans la déclaration en
         // fin de méthode, l'éditeur montre un project vide jusqu'à un
@@ -120,7 +129,7 @@ public final class ShopPlugin extends JavaPlugin {
                         : Optional.empty();
                 if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
                     wroteContent = true;
-                    getLogger().warning("Contenu Boutique bootstrappé dans plugins/Boutique/editor"
+                    getLogger().warning("Contenu Boutique bootstrappé dans " + projectDir.getPath()
                             + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
                             + ".");
                 }
@@ -134,15 +143,24 @@ public final class ShopPlugin extends JavaPlugin {
         // (data/categories/). AVANT le register du module, pour que le premier
         // reloadRepo lise déjà le nouveau format ; la sync files-first
         // d'Artisan auto-pushe ensuite le nouvel arbre (LOCAL_ONLY).
-        if (fr.iban.boutique.artisan.ShopDataMigrator.migrateIfNeeded(projectDir)) {
+        if (fr.iban.boutique.artisan.ShopDataMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
             wroteContent = true;
             getLogger().warning("Catalogue migré vers data/categories/ (models déclarés) — "
                     + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
         }
 
-        if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir)) {
+        if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
             wroteContent = true;
             getLogger().info("Lore du catalogue déplacé dans les icônes (sauvegarde : catalog-icon-backup).");
+        }
+
+        try {
+            if (fr.iban.boutique.artisan.ManifestCleaner.removeLegacyProjectId(projectDir)) {
+                wroteContent = true;
+                getLogger().info("project_id retiré du manifest : l'identité du module est son dossier.");
+            }
+        } catch (IOException e) {
+            getLogger().warning("Nettoyage du manifest impossible : " + e.getMessage());
         }
 
         // One-shot (ADR yaml-assisted-editing) : les formats de prix vivaient

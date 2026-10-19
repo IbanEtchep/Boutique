@@ -30,8 +30,17 @@ import java.util.Map;
 public final class ShopDataMigrator {
     private ShopDataMigrator() {}
 
-    /** @return true when a migration ran. */
+    /** {@link #migrateIfNeeded(File, File)} archiving beside the project dir. */
     public static boolean migrateIfNeeded(File projectDir) {
+        return migrateIfNeeded(projectDir, projectDir.getParentFile());
+    }
+
+    /**
+     * @param archiveDir where {@code shop.yaml.migrated} goes: the plugin's data folder, never
+     *     {@code plugins/Artisan/modules/}, whose every entry is read as a module.
+     * @return true when a migration ran.
+     */
+    public static boolean migrateIfNeeded(File projectDir, File archiveDir) {
         File shopYaml = new File(projectDir, "boutique/shop.yaml");
         if (!shopYaml.isFile()) return false;
         if (sourceMetaFile(projectDir).exists()) {
@@ -48,7 +57,7 @@ public final class ShopDataMigrator {
             deleteExampleCatalog(projectDir);
         }
         try {
-            return migrate(projectDir, shopYaml);
+            return migrate(projectDir, shopYaml, archiveDir);
         } catch (Exception e) {
             // Never block plugin boot on a migration failure — the legacy
             // reader still works; a WARN suffices for post-mortem.
@@ -58,7 +67,7 @@ public final class ShopDataMigrator {
     }
 
     @SuppressWarnings("unchecked")
-    private static boolean migrate(File projectDir, File shopYamlFile) throws IOException {
+    private static boolean migrate(File projectDir, File shopYamlFile, File archiveDir) throws IOException {
         Yaml yaml = plainYaml();
         Map<String, Object> shop = yaml.load(Files.readString(shopYamlFile.toPath()));
         if (shop == null || !"boutique/v1".equals(shop.get("schema"))) return false;
@@ -122,7 +131,8 @@ public final class ShopDataMigrator {
         writePlacedMenus(projectDir, categories, yaml);
 
         // ── archive the legacy file OUTSIDE the project (never bundled) ─────
-        File archive = new File(projectDir.getParentFile(), "shop.yaml.migrated");
+        Files.createDirectories(archiveDir.toPath());
+        File archive = new File(archiveDir, "shop.yaml.migrated");
         Files.move(shopYamlFile.toPath(), archive.toPath(), StandardCopyOption.REPLACE_EXISTING);
         // Le dossier `boutique/` n'a plus lieu d'être : vide, il voyagerait dans
         // le bundle et dans les exports de project comme un fantôme du legacy.

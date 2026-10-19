@@ -117,4 +117,14 @@ class ShopDataMigratorTest {
         empty.mkdirs();
         assertFalse(ShopDataMigrator.migrateIfNeeded(empty));
     }
+
+    @Test
+    void archivesInTheGivenFolder_notBesideTheModuleFolder(@TempDir File root) throws Exception {
+        // plugins/Artisan/modules/boutique_addon/ : every entry of modules/ is read as a module.
+        File projectDir = seedProject(root);
+        File pluginFolder = new File(root, "Boutique");
+        assertTrue(ShopDataMigrator.migrateIfNeeded(projectDir, pluginFolder));
+        assertTrue(new File(pluginFolder, "shop.yaml.migrated").isFile());
+        assertFalse(new File(root, "shop.yaml.migrated").exists());
+    }
 }
