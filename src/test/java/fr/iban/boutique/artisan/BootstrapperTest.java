@@ -21,8 +21,8 @@ class BootstrapperTest {
             "data/shop_settings.yaml",
             "lang/fr.yaml");
 
-    // bootstrapIfAbsent writes directly INTO the given project dir (the Add-on
-    // registers e.g. plugins/Boutique/editor as its root), using a sibling .<name>.tmp.
+    // bootstrapIfAbsent writes directly INTO the given project dir (the module folder
+    // plugins/Artisan/modules/boutique_addon), using a sibling .<name>.tmp.
 
     @Test
     void happyPath_writesAllBundledFiles(@TempDir File parent) throws IOException {
@@ -41,17 +41,44 @@ class BootstrapperTest {
     }
 
     @Test
-    void preExistingProjectDir_returnsFalseAndWritesNothing(@TempDir File parent) throws IOException {
+    void projectWithManifest_returnsFalseAndWritesNothing(@TempDir File parent) throws IOException {
         File projectDir = new File(parent, "editor");
         Files.createDirectories(projectDir.toPath());
-        Files.writeString(new File(projectDir, "marker.txt").toPath(), "already there");
+        Files.writeString(new File(projectDir, "manifest.yaml").toPath(), "schema: manifest/v1\n");
 
         boolean wrote = Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
 
         assertFalse(wrote);
-        // untouched: only the marker we wrote is present, nothing bootstrapped
-        assertTrue(new File(projectDir, "marker.txt").isFile());
-        assertFalse(new File(projectDir, "manifest.yaml").exists());
+        assertEquals("schema: manifest/v1\n", Files.readString(new File(projectDir, "manifest.yaml").toPath()));
+        assertFalse(new File(projectDir, "menus").exists());
+    }
+
+    @Test
+    void emptyModuleFolder_isFilled(@TempDir File parent) throws IOException {
+        // Artisan creates plugins/Artisan/modules/<folder>/ before the add-on writes its defaults.
+        File projectDir = new File(parent, "boutique_addon");
+        Files.createDirectories(new File(projectDir, ".artisan").toPath());
+        Files.writeString(new File(projectDir, ".artisan/project-id").toPath(), "kept\n");
+
+        assertTrue(Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty()));
+
+        for (String res : EXPECTED_FILES) {
+            assertTrue(new File(projectDir, res).isFile(), () -> res + " should exist");
+        }
+        assertEquals("kept\n", Files.readString(new File(projectDir, ".artisan/project-id").toPath()));
+        assertFalse(new File(parent, ".boutique_addon.tmp").exists());
+    }
+
+    @Test
+    void interruptedFill_withoutManifest_isRetried(@TempDir File parent) throws IOException {
+        File projectDir = new File(parent, "boutique_addon");
+        Files.createDirectories(new File(projectDir, "menus").toPath());
+        Files.writeString(new File(projectDir, "menus/shop_main.yaml").toPath(), "half written");
+
+        assertTrue(Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty()));
+
+        assertNotEquals("half written", Files.readString(new File(projectDir, "menus/shop_main.yaml").toPath()));
+        assertTrue(new File(projectDir, "manifest.yaml").isFile());
     }
 
     @Test

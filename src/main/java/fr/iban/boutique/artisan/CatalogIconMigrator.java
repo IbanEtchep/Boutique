@@ -27,9 +27,19 @@ public final class CatalogIconMigrator {
         return true;
     }
 
-    @SuppressWarnings("unchecked")
+    /** {@link #migrateIfNeeded(File, File)} backing up beside the project dir. */
     public static boolean migrateIfNeeded(File projectDir) {
+        return migrateIfNeeded(projectDir, projectDir.getParentFile());
+    }
+
+    /**
+     * @param backupRoot holds {@code catalog-icon-backup/}: the plugin's data folder, never
+     *     {@code plugins/Artisan/modules/}, whose every folder is read as a module.
+     */
+    @SuppressWarnings("unchecked")
+    public static boolean migrateIfNeeded(File projectDir, File backupRoot) {
         Path project = projectDir.toPath();
+        Path backups = backupRoot.toPath().resolve("catalog-icon-backup");
         Path categories = project.resolve("data/categories");
         if (!Files.isDirectory(categories)) return false;
         try {
@@ -70,7 +80,7 @@ public final class CatalogIconMigrator {
                     for (Path path : langs.filter(p -> p.toString().matches(".*\\.ya?ml$")).toList()) {
                         Map<String, String> before = LangFlattener.flatten(yaml.load(Files.readString(path)));
                         Map<String, String> after = new LinkedHashMap<>(before);
-                        Path backup = project.resolveSibling("catalog-icon-backup").resolve(project.relativize(path));
+                        Path backup = backups.resolve(project.relativize(path));
                         Map<String, String> source = Files.exists(backup)
                                 ? LangFlattener.flatten(yaml.load(Files.readString(backup))) : before;
                         for (var entry : source.entrySet()) for (var rename : renames.entrySet()) {
@@ -81,11 +91,11 @@ public final class CatalogIconMigrator {
                                 break;
                             }
                         }
-                        if (!after.equals(before)) write(project, path, yaml.dump(after));
+                        if (!after.equals(before)) write(project, backups, path, yaml.dump(after));
                     }
                 }
             }
-            for (var entry : writes.entrySet()) write(project, entry.getKey(), entry.getValue());
+            for (var entry : writes.entrySet()) write(project, backups, entry.getKey(), entry.getValue());
             return !writes.isEmpty();
         } catch (IOException | RuntimeException e) {
             System.err.println("[Boutique] Icon migration failed: " + e.getMessage());
@@ -106,8 +116,8 @@ public final class CatalogIconMigrator {
         iconTranslations(icon.get("extends"), from + ".extends", to + ".extends", renames);
     }
 
-    private static void write(Path project, Path file, String content) throws IOException {
-        Path backup = project.resolveSibling("catalog-icon-backup").resolve(project.relativize(file));
+    private static void write(Path project, Path backups, Path file, String content) throws IOException {
+        Path backup = backups.resolve(project.relativize(file));
         Files.createDirectories(backup.getParent());
         if (!Files.exists(backup)) Files.copy(file, backup);
         Path tmp = Files.createTempFile(file.getParent(), ".icon-migration-", ".tmp");

@@ -35,4 +35,14 @@ class CatalogIconMigratorTest {
   assertEquals(once, Files.readString(row));
   assertEquals(original, Files.readString(root.resolve("catalog-icon-backup/data/categories/weapons.yaml")));
  }
+ @Test void backsUpInTheGivenFolder() throws Exception {
+  Path project = root.resolve("modules/boutique_addon");
+  Path pluginFolder = root.resolve("Boutique");
+  Files.createDirectories(project.resolve("data/categories"));
+  String original = "id: weapons\nitems:\n- id: sword\n  icon: STONE\n  lore: [Rare]\n";
+  Files.writeString(project.resolve("data/categories/weapons.yaml"), original);
+  assertTrue(CatalogIconMigrator.migrateIfNeeded(project.toFile(), pluginFolder.toFile()));
+  assertEquals(original, Files.readString(pluginFolder.resolve("catalog-icon-backup/data/categories/weapons.yaml")));
+  assertFalse(Files.exists(root.resolve("modules/catalog-icon-backup")));
+ }
 }

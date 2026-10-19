@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/** Écrit le project par défaut editor dans plugins/Boutique/ s'il n'existe pas. */
+/** Écrit le contenu par défaut dans le dossier du module s'il n'en a pas encore. */
 public final class Bootstrapper {
     /**
      * Catalogue EXEMPLE (ADR composable-data-models §8) — la Table déclarée
@@ -36,13 +36,18 @@ public final class Bootstrapper {
     /**
      * @return true si le bootstrap a écrit quelque chose.
      *
-     * Écrit dans un répertoire temporaire sibling ({@code .editor.tmp}) puis rename
-     * atomique vers {@code editor} : une écriture partielle qui échoue ne laisse jamais
-     * un {@code editor/} à moitié rempli qui bloquerait tout retry futur (guard
-     * {@code projectDir.exists()}).
+     * Le dossier du module ({@code plugins/Artisan/modules/boutique_addon/}) existe
+     * avant nous : Artisan le crée en le réservant. Le contenu est donc « absent »
+     * tant que {@code manifest.yaml} manque, pas tant que le dossier manque.
+     *
+     * Écrit dans un répertoire temporaire sibling ({@code .<nom>.tmp}, caché du scan
+     * d'Artisan) puis le déplace : d'un bloc si le dossier n'existe pas, fichier par
+     * fichier sinon, {@code manifest.yaml} en dernier. Une écriture interrompue ne
+     * laisse donc jamais de manifest, et le démarrage suivant recommence.
      */
     public static boolean bootstrapIfAbsent(File projectDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {
-        if (projectDir.exists()) return false;
+        File manifest = new File(projectDir, "manifest.yaml");
+        if (manifest.exists()) return false;
 
         File parent = projectDir.getParentFile();
         File tmpDir = new File(parent, "." + projectDir.getName() + ".tmp");
@@ -74,12 +79,33 @@ public final class Bootstrapper {
                 Files.writeString(target.toPath(), entry.getValue());
             }
             Files.createDirectories(parent.toPath());
-            Files.move(tmpDir.toPath(), projectDir.toPath());
+            if (!projectDir.exists()) {
+                Files.move(tmpDir.toPath(), projectDir.toPath());
+            } else {
+                moveInto(tmpDir.toPath(), projectDir.toPath());
+                deleteRecursively(tmpDir);
+            }
         } catch (IOException e) {
             deleteRecursively(tmpDir);
             throw e;
         }
         return true;
+    }
+
+    /** Moves every file of {@code from} into {@code to}, {@code manifest.yaml} last. */
+    private static void moveInto(java.nio.file.Path from, java.nio.file.Path to) throws IOException {
+        java.nio.file.Path manifest = from.resolve("manifest.yaml");
+        List<java.nio.file.Path> files;
+        try (Stream<java.nio.file.Path> walk = Files.walk(from)) {
+            files = walk.filter(Files::isRegularFile).filter(p -> !p.equals(manifest)).toList();
+        }
+        for (java.nio.file.Path file : files) moveFile(file, to.resolve(from.relativize(file)));
+        if (Files.isRegularFile(manifest)) moveFile(manifest, to.resolve("manifest.yaml"));
+    }
+
+    private static void moveFile(java.nio.file.Path file, java.nio.file.Path target) throws IOException {
+        Files.createDirectories(target.getParent());
+        Files.move(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 
     private static void deleteRecursively(File dir) throws IOException {

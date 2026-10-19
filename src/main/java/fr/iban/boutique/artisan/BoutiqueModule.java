@@ -18,7 +18,9 @@ public final class BoutiqueModule implements ArtisanModule {
 
     public BoutiqueModule(ShopPlugin plugin, ShopRepo repo) { this.plugin = plugin; this.repo = repo; }
 
-    @Override public String getId() { return "boutique"; }
+    public static final String ID = "boutique";
+
+    @Override public String getId() { return ID; }
     @Override public String getSchemaVersion() { return "boutique/v1"; }
 
     /** Réglages courants (rechargés avec le repo). */
@@ -33,8 +35,8 @@ public final class BoutiqueModule implements ArtisanModule {
         api.getModels().declare(ShopModels.shopSettings());
         // Config screens (ADR module-config-screens): sidebar entries whose
         // core-generated form edits these tables live over the WS relay.
-        api.getScreens().declare("boutique:catalog", "Catalogue", "data/categories", "boutique_addon");
-        api.getScreens().declare("boutique:settings", "Réglages", "data/shop_settings", "boutique_addon");
+        api.getScreens().declare("boutique:catalog", "Catalogue", "data/categories", ShopPlugin.PROJECT_ID);
+        api.getScreens().declare("boutique:settings", "Réglages", "data/shop_settings", ShopPlugin.PROJECT_ID);
         reloadRepo();
         // Both sources are STATIC: a stable, enumerable key-set (categories/items
         // keyed by `id`), so they're placeable in the editor's placement mode.
