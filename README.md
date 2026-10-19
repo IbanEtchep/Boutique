@@ -1,7 +1,7 @@
 
 ### Module folder
 
-Boutique needs Artisan with the add-on API 2.8.0 or newer. Its menus, dialogs, commands, texts, catalogue and settings live in `plugins/Artisan/modules/boutique_addon/`, the module's folder, listed under the Boutique module in the editor. The folder keeps the former project id, so Versions, drafts and qualified references (`boutique_addon:…`) carry over. On the first start with this version, Artisan moves an existing `plugins/Boutique/editor/` there once; while both folders hold files, the old one stays in use and the log says so. The `project_id` line older versions wrote in `manifest.yaml` is removed at startup. Migration archives (`shop.yaml.migrated`, `catalog-icon-backup/`) stay in `plugins/Boutique/`.
+Boutique needs Artisan with the add-on API 2.8.0 or newer. Build with `./gradlew build` (tests, then `build/libs/Boutique-<version>.jar` with HikariCP shaded in); the API version is `artisanApiVersion` in `gradle.properties`. Its menus, dialogs, commands, texts, catalogue and settings live in `plugins/Artisan/modules/boutique_addon/`, the module's folder, listed under the Boutique module in the editor. The folder keeps the former project id, so Versions, drafts and qualified references (`boutique_addon:…`) carry over. On the first start with this version, Artisan moves an existing `plugins/Boutique/editor/` there once; while both folders hold files, the old one stays in use and the log says so. The `project_id` line older versions wrote in `manifest.yaml` is removed at startup. Migration archives (`shop.yaml.migrated`, `catalog-icon-backup/`) stay in `plugins/Boutique/`.
 
 ### Catalogue icon lore
 
