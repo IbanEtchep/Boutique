@@ -15,7 +15,6 @@ public class SqlStorage extends AbstractStorage {
 
     public SqlStorage() {
         this.dataSource = DbAccess.getDataSource();
-        DbTables.createTables();
     }
 
     public int getTokens(UUID uuid) {
@@ -69,6 +68,21 @@ public class SqlStorage extends AbstractStorage {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    public boolean removeTokensIfEnough(UUID uuid, int amount) {
+        String sql = "UPDATE igshop_players SET tokens=tokens-? WHERE uuid=? AND tokens>=?;";
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, amount);
+                ps.setString(2, uuid.toString());
+                ps.setInt(3, amount);
+                return ps.executeUpdate() == 1;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 

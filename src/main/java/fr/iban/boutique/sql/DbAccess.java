@@ -15,6 +15,9 @@ public class DbAccess {
 		hikariConfig.setUsername(credentials.getUser());
 		hikariConfig.setPassword(credentials.getPass());
 		hikariConfig.setMaximumPoolSize(3);
+		// No connection at construction: an unreachable database no longer blocks
+		// onEnable for the connection timeout (30 s), the first query waits instead.
+		hikariConfig.setInitializationFailTimeout(-1);
 		hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
 		hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
 		hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

@@ -26,8 +26,17 @@ public final class SettingsMigrator {
      * @return true si un fichier a été écrit
      */
     public static boolean ensureSettings(File projectDir, String legacyPriceDisplay, String legacyDiscountDisplay) {
+        return ensureSettings(projectDir, legacyPriceDisplay, legacyDiscountDisplay, true);
+    }
+
+    /**
+     * @param takeLegacy true la première fois seulement : les formats du config.yml
+     *                   remplacent les défauts intacts du bootstrap. Ensuite, un admin
+     *                   qui remet exactement les défauts les garde.
+     */
+    public static boolean ensureSettings(File projectDir, String legacyPriceDisplay, String legacyDiscountDisplay, boolean takeLegacy) {
         try {
-            return apply(projectDir, legacyPriceDisplay, legacyDiscountDisplay);
+            return apply(projectDir, legacyPriceDisplay, legacyDiscountDisplay, takeLegacy);
         } catch (Exception e) {
             System.err.println("[Boutique] settings migration failed: " + e.getMessage());
             return false;
@@ -35,7 +44,7 @@ public final class SettingsMigrator {
     }
 
     @SuppressWarnings("unchecked")
-    private static boolean apply(File projectDir, String legacyPrice, String legacyDiscount) throws IOException {
+    private static boolean apply(File projectDir, String legacyPrice, String legacyDiscount, boolean takeLegacy) throws IOException {
         File settingsFile = new File(projectDir, "data/shop_settings.yaml");
         if (!settingsFile.getParentFile().isDirectory()) return false;
 
@@ -57,7 +66,7 @@ public final class SettingsMigrator {
         // tant qu'elles sont les défauts intacts, les formats du config.yml
         // legacy priment (sinon ils seraient perdus sur une install fraîche).
         // Une valeur choisie par l'admin, elle, n'est jamais écrasée.
-        if (!(root.get("placeholders") instanceof Map) || isUntouchedDefaults(root.get("placeholders"))) {
+        if (!(root.get("placeholders") instanceof Map) || (takeLegacy && isUntouchedDefaults(root.get("placeholders")))) {
             Map<String, Object> ph = new LinkedHashMap<>();
             ph.put("price_display", blankTo(legacyPrice, ShopModels.DEFAULT_PRICE_DISPLAY));
             ph.put("discount_price_display", blankTo(legacyDiscount, ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY));

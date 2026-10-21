@@ -3,6 +3,7 @@ package fr.iban.boutique;
 import fr.iban.boutique.artisan.BoutiqueModule;
 import fr.iban.boutique.artisan.Bootstrapper;
 import fr.iban.boutique.artisan.LegacyConfigMigrator;
+import fr.iban.boutique.artisan.Migrations;
 import fr.iban.boutique.artisan.ShopRepo;
 import fr.iban.boutique.commands.TokensCMD;
 import fr.iban.boutique.listener.JoinQuitListener;
@@ -37,7 +38,8 @@ public final class ShopPlugin extends JavaPlugin {
     private ShopRepo shopRepo;
     private net.artisanmc.modules.api.ArtisanAPI artisanApi;
     private static ShopPlugin instance;
-    private final Map<UUID, Integer> tokensCache = new HashMap<>();
+    /** Écrit depuis les tâches async (join, achat), lu sur le thread principal (placeholders). */
+    private final Map<UUID, Integer> tokensCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -109,33 +111,31 @@ public final class ShopPlugin extends JavaPlugin {
         File projectDir = api.getProjectRoots().moduleFolder(
                 PROJECT_ID, fr.iban.boutique.artisan.BoutiqueModule.ID, legacyDir.isDirectory() ? legacyDir : null);
 
-        // Ce qui suit ÉCRIT dans ce dossier. Le core reprend son instantané au
-        // moment de l'enregistrement ci-dessus — donc sur un dossier encore vide
-        // — et ne peut pas deviner nos écritures ensuite : sans la déclaration en
-        // fin de méthode, l'éditeur montre un project vide jusqu'à un
-        // `/artisan reload` tapé à la main (constaté en prod le 2026-08-17).
-        boolean wroteContent = false;
+        // Ce qui suit ÉCRIT dans ce dossier. Artisan lit le dossier enregistré
+        // ci-dessus au tick suivant, une fois ce onEnable terminé : il voit ces
+        // écritures, et appelle le onReload() du module. Aucune relecture à
+        // demander ici (elle relisait tous les projects et faisait attendre le
+        // module sur le verrou de cette relecture).
+        Migrations migrations = new Migrations(getDataFolder());
 
         // Contenu par défaut, ou catalogue repris du config.yml MenuAPI. AVANT
         // les migrateurs : c'est ce bootstrap qui pose le boutique/shop.yaml
         // migré, que la conversion ci-dessous bascule dans la Table au même
-        // boot (l'add-on ne sert jamais un catalogue à moitié migré).
-        if (!api.getProject().hasContent("boutique")) {
-            try {
-                // Migration depuis le texte brut capturé AVANT assainissement (le
-                // config.yml sur disque n'a plus son bloc categories à ce stade).
-                Optional<java.util.Map<String, String>> migrated = (hadLegacyConfig && legacyRaw != null)
-                        ? LegacyConfigMigrator.migrate(legacyRaw)
-                        : Optional.empty();
-                if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
-                    wroteContent = true;
-                    getLogger().warning("Contenu Boutique bootstrappé dans " + projectDir.getPath()
-                            + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
-                            + ".");
-                }
-            } catch (IOException e) {
-                getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
+        // boot (l'add-on ne sert jamais un catalogue à moitié migré). Le
+        // bootstrap regarde lui-même le manifest du dossier : rien à parcourir.
+        try {
+            // Migration depuis le texte brut capturé AVANT assainissement (le
+            // config.yml sur disque n'a plus son bloc categories à ce stade).
+            Optional<java.util.Map<String, String>> migrated = (hadLegacyConfig && legacyRaw != null)
+                    ? LegacyConfigMigrator.migrate(legacyRaw)
+                    : Optional.empty();
+            if (Bootstrapper.bootstrapIfAbsent(projectDir, migrated)) {
+                getLogger().warning("Contenu Boutique bootstrappé dans " + projectDir.getPath()
+                        + (migrated.isPresent() ? " (catalogue migré depuis config.yml)" : " (catalogue exemple)")
+                        + ".");
             }
+        } catch (IOException e) {
+            getLogger().severe("Erreur lors du bootstrap du contenu Boutique : " + e.getMessage());
         }
 
         // One-shot (ADR composable-data-models §8): un project pré-migration
@@ -144,22 +144,22 @@ public final class ShopPlugin extends JavaPlugin {
         // reloadRepo lise déjà le nouveau format ; la sync files-first
         // d'Artisan auto-pushe ensuite le nouvel arbre (LOCAL_ONLY).
         if (fr.iban.boutique.artisan.ShopDataMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
-            wroteContent = true;
             getLogger().warning("Catalogue migré vers data/categories/ (models déclarés) — "
                     + "l'ancien shop.yaml est archivé dans plugins/Boutique/shop.yaml.migrated.");
         }
 
-        if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
-            wroteContent = true;
-            getLogger().info("Lore du catalogue déplacé dans les icônes (sauvegarde : catalog-icon-backup).");
+        // Reparse chaque catégorie pour savoir s'il y a quelque chose à faire : une fois suffit.
+        if (!migrations.isDone("catalog-icons")) {
+            if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
+                getLogger().info("Lore du catalogue déplacé dans les icônes (sauvegarde : catalog-icon-backup).");
+            }
+            migrations.markDone("catalog-icons");
         }
 
         try {
             switch (fr.iban.boutique.artisan.ShopCommandMigrator.migrate(projectDir)) {
-                case REMOVED -> {
-                    wroteContent = true;
+                case REMOVED ->
                     getLogger().info("commands/boutique.yaml retiré : /boutique est maintenant une commande du module (section Système de l'éditeur).");
-                }
                 case KEPT_CUSTOM -> getLogger().warning("commands/boutique.yaml a été modifié : il est gardé et garde le nom /boutique, "
                         + "la commande du module reste joignable en /boutique:boutique. Pour basculer, reporte tes changements "
                         + "dans un override de boutique:open (section Système de l'éditeur) puis supprime ce fichier.");
@@ -171,7 +171,6 @@ public final class ShopPlugin extends JavaPlugin {
 
         try {
             if (fr.iban.boutique.artisan.ManifestCleaner.removeLegacyProjectId(projectDir)) {
-                wroteContent = true;
                 getLogger().info("project_id retiré du manifest : l'identité du module est son dossier.");
             }
         } catch (IOException e) {
@@ -181,21 +180,17 @@ public final class ShopPlugin extends JavaPlugin {
         // One-shot (ADR yaml-assisted-editing) : les formats de prix vivaient
         // dans config.yml où plus aucun code ne les lisait — ils deviennent des
         // réglages éditables du project, typés par le model déclaré.
+        // Les formats du config.yml legacy ne priment qu'une fois : ensuite, un
+        // admin qui remet exactement les défauts les garde.
+        boolean legacyFormats = !migrations.isDone("settings-placeholders");
         if (fr.iban.boutique.artisan.SettingsMigrator.ensureSettings(
                 projectDir,
-                getConfig().getString("placeholders.price-display"),
-                getConfig().getString("placeholders.discount-price-display"))) {
-            wroteContent = true;
+                legacyFormats ? getConfig().getString("placeholders.price-display") : null,
+                legacyFormats ? getConfig().getString("placeholders.discount-price-display") : null,
+                legacyFormats)) {
             getLogger().info("Formats de prix repris dans data/shop_settings.yaml (éditables depuis l'éditeur).");
         }
-
-        // On DÉCLARE ce qu'on vient d'écrire. Le core sert un instantané pris au
-        // chargement (sémantique de reload) : sans cet appel, le contenu qu'on
-        // vient de poser reste invisible en jeu comme dans l'éditeur, et l'admin
-        // croit son installation ratée.
-        if (wroteContent) {
-            api.getProject().reload();
-        }
+        migrations.markDone("settings-placeholders");
 
         this.shopRepo = new ShopRepo();
         api.getModules().register(new BoutiqueModule(this, shopRepo));
@@ -204,6 +199,7 @@ public final class ShopPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (databaseManager != null) databaseManager.shutdown();
         DbAccess.closePool();
     }
 

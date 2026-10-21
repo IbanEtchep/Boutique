@@ -40,7 +40,8 @@ public final class BoutiqueModule implements ArtisanModule {
         // core-generated form edits these tables live over the WS relay.
         api.getScreens().declare("boutique:catalog", "Catalogue", "data/categories", ShopPlugin.PROJECT_ID);
         api.getScreens().declare("boutique:settings", "Réglages", "data/shop_settings", ShopPlugin.PROJECT_ID);
-        reloadRepo();
+        // Le catalogue se charge au onReload() qu'Artisan appelle au tick suivant,
+        // une fois le dossier du module lu : rien ne le consulte avant.
         // Both sources are STATIC: a stable, enumerable key-set (categories/items
         // keyed by `id`), so they're placeable in the editor's placement mode.
         // Field values (e.g. final_price) may still resolve per-player at runtime.
@@ -152,14 +153,17 @@ public final class BoutiqueModule implements ArtisanModule {
     @Override public void onDisable() {}
 
     private void reloadRepo() {
+        // The module's own folder only: the catalog lives there and nowhere else.
+        // Reading every project made the first one with a data/categories win,
+        // so another module's table could replace the catalog.
+        String pid = ShopPlugin.PROJECT_ID;
         // Declared-model Table first (ADR composable-data-models §8): the
         // migrated/bootstrapped format. Legacy boutique/shop.yaml stays as the
-        // transition fallback for not-yet-migrated projects.
-        for (String pid : api.getProject().projectIds()) {
-            List<String> rows = api.getProject().list(pid, "data/categories").stream()
-                    .filter(rel -> rel.endsWith(".yaml") && !rel.equals("_source.yaml"))
-                    .collect(Collectors.toList());
-            if (rows.isEmpty()) continue;
+        // transition fallback for a not-yet-migrated folder.
+        List<String> rows = api.getProject().list(pid, "data/categories").stream()
+                .filter(rel -> rel.endsWith(".yaml") && !rel.equals("_source.yaml"))
+                .collect(Collectors.toList());
+        if (!rows.isEmpty()) {
             this.settings = ShopSettings.parse(api.getProject().read(pid, "data/shop_settings.yaml"));
             repo.loadFromDataTable(
                     rel -> api.getProject().read(pid, "data/categories/" + rel),
@@ -170,11 +174,9 @@ public final class BoutiqueModule implements ArtisanModule {
         }
         List<String> files = new ArrayList<>();
         Map<String, String> contents = new HashMap<>();
-        for (String pid : api.getProject().projectIds()) {
-            for (String rel : api.getProject().list(pid, "boutique")) {
-                String content = api.getProject().read(pid, "boutique/" + rel);
-                if (content != null) { files.add(pid + "/" + rel); contents.put(pid + "/" + rel, content); }
-            }
+        for (String rel : api.getProject().list(pid, "boutique")) {
+            String content = api.getProject().read(pid, "boutique/" + rel);
+            if (content != null) { files.add(pid + "/" + rel); contents.put(pid + "/" + rel, content); }
         }
         repo.load(contents::get, files);
     }

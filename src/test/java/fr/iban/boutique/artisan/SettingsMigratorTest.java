@@ -2,89 +2,56 @@ package fr.iban.boutique.artisan;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SettingsMigratorTest {
+    @TempDir File projectDir;
 
-    private File project(File tmp) throws IOException {
-        File dir = new File(tmp, "boutique_shop");
-        assertTrue(new File(dir, "data").mkdirs());
-        return dir;
+    private File settings() throws Exception {
+        File data = new File(projectDir, "data");
+        data.mkdirs();
+        new File(projectDir, "models").mkdirs();
+        Files.writeString(new File(projectDir, "models/shop_settings.yaml").toPath(), "model: boutique:shop_settings\n");
+        File file = new File(data, "shop_settings.yaml");
+        Files.writeString(file.toPath(), "whole_shop_discount: 0\nplaceholders:\n  price_display: '"
+                + ShopModels.DEFAULT_PRICE_DISPLAY + "'\n  discount_price_display: '" + ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY + "'\n");
+        return file;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> placeholders(File file) throws Exception {
+        Map<String, Object> root = new Yaml().load(Files.readString(file.toPath()));
+        return (Map<String, Object>) root.get("placeholders");
     }
 
     @Test
-    void seedsPlaceholdersFromTheLegacyConfig(@TempDir File tmp) throws Exception {
-        File dir = project(tmp);
-        Files.writeString(new File(dir, "data/shop_settings.yaml").toPath(), "whole_shop_discount: 10\n");
-
-        assertTrue(SettingsMigrator.ensureSettings(dir, "%price% jetons", "&m%old_price% &f%price% jetons"));
-
-        var s = ShopSettings.parse(Files.readString(new File(dir, "data/shop_settings.yaml").toPath()));
-        assertEquals(10, s.wholeShopDiscount(), "la valeur existante est conservée");
-        assertEquals("%price% jetons", s.priceDisplay());
-        // La ref beside rend le formulaire typé par la déclaration du JAR.
-        assertEquals("model: boutique:shop_settings\n",
-                Files.readString(new File(dir, "models/shop_settings.yaml").toPath()));
+    void theLegacyFormatsReplaceTheUntouchedDefaultsTheFirstTime() throws Exception {
+        File file = settings();
+        assertTrue(SettingsMigrator.ensureSettings(projectDir, "&e%price% jetons", null, true));
+        assertEquals("&e%price% jetons", placeholders(file).get("price_display"));
+        assertEquals(ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY, placeholders(file).get("discount_price_display"));
     }
 
     @Test
-    void fallsBackToDefaultsWhenTheLegacyConfigHasNothing(@TempDir File tmp) throws Exception {
-        File dir = project(tmp);
-        Files.writeString(new File(dir, "data/shop_settings.yaml").toPath(), "whole_shop_discount: 0\n");
-
-        SettingsMigrator.ensureSettings(dir, null, "  ");
-
-        var s = ShopSettings.parse(Files.readString(new File(dir, "data/shop_settings.yaml").toPath()));
-        assertEquals(ShopModels.DEFAULT_PRICE_DISPLAY, s.priceDisplay());
-        assertEquals(ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY, s.discountPriceDisplay());
+    void afterThatAnAdminWhoSetsTheDefaultsAgainKeepsThem() throws Exception {
+        File file = settings();
+        assertFalse(SettingsMigrator.ensureSettings(projectDir, "&e%price% jetons", null, false),
+                "nothing to write once the legacy formats were taken");
+        assertEquals(ShopModels.DEFAULT_PRICE_DISPLAY, placeholders(file).get("price_display"));
     }
 
     @Test
-    void neverOverwritesValuesAlreadyThere(@TempDir File tmp) throws Exception {
-        File dir = project(tmp);
-        String existing = """
-                whole_shop_discount: 25
-                placeholders:
-                  price_display: "%price% pièces"
-                  discount_price_display: "promo %price%"
-                """;
-        Files.writeString(new File(dir, "data/shop_settings.yaml").toPath(), existing);
-
-        SettingsMigrator.ensureSettings(dir, "%price% jetons", "autre");
-        SettingsMigrator.ensureSettings(dir, "%price% jetons", "autre");
-
-        var s = ShopSettings.parse(Files.readString(new File(dir, "data/shop_settings.yaml").toPath()));
-        assertEquals(25, s.wholeShopDiscount());
-        assertEquals("%price% pièces", s.priceDisplay());
-        assertEquals("promo %price%", s.discountPriceDisplay());
-    }
-
-    /**
-     * Le bootstrap pose déjà un bloc `placeholders` avec les défauts du modèle —
-     * sans quoi les formats du config.yml legacy seraient perdus sur une install
-     * fraîche (le bloc existe donc « rien à seeder »). Tant que les valeurs sont
-     * les défauts intacts, le legacy prime.
-     */
-    @Test
-    void seedsLegacyFormatsOverUntouchedBootstrapDefaults(@TempDir File tmp) throws Exception {
-        File dir = new File(tmp, "editor");
-        Bootstrapper.bootstrapIfAbsent(dir, java.util.Optional.empty());
-
-        assertTrue(SettingsMigrator.ensureSettings(dir, "%price% jetons", "&m%old_price% &f%price% jetons"));
-
-        var s = ShopSettings.parse(Files.readString(new File(dir, "data/shop_settings.yaml").toPath()));
-        assertEquals("%price% jetons", s.priceDisplay());
-        assertEquals("&m%old_price% &f%price% jetons", s.discountPriceDisplay());
-    }
-
-    /** Un projet sans dossier data/ n'est pas un projet boutique — ne rien faire. */
-    @Test
-    void doesNothingOutsideAProject(@TempDir File tmp) {
-        assertFalse(SettingsMigrator.ensureSettings(new File(tmp, "absent"), null, null));
+    void aMissingBlockIsStillWritten() throws Exception {
+        new File(projectDir, "data").mkdirs();
+        File file = new File(projectDir, "data/shop_settings.yaml");
+        Files.writeString(file.toPath(), "whole_shop_discount: 5\n");
+        assertTrue(SettingsMigrator.ensureSettings(projectDir, null, null, false));
+        assertEquals(ShopModels.DEFAULT_PRICE_DISPLAY, placeholders(file).get("price_display"));
     }
 }

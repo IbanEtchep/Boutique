@@ -21,24 +21,29 @@ public class TransactionManager {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.no-buy-commands")));
             return;
         }
-        databaseManager.getTokensAsync(player.getUniqueId()).thenAccept(money -> Bukkit.getScheduler().runTask(plugin, () -> {
-            int price = (int) Math.round(item.finalPrice(wholeShopDiscount));
-            if (money >= price) {
-                // La chaîne Action DSL de l'item (conditions, messages, commandes…)
-                // s'exécute via le moteur d'actions Artisan, main-thread.
-                // Project en portée : les actions d'un article peuvent porter `@clé`,
-                // résolue dans les lang/ du project boutique.
-                plugin.getArtisanApi().getActions().execute(
-                        player, item.getActions(), java.util.Map.of(), ShopPlugin.PROJECT_ID);
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));
-                databaseManager.addPurchaseHistory(player.getUniqueId(), item);
-                databaseManager.removeTokens(player.getUniqueId(), price);
-                Bukkit.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-                    plugin.getTokensCache().put(player.getUniqueId(), plugin.getDatabaseManager().getTokens(player.getUniqueId()));
-                });
-            } else {
+        int price = (int) Math.round(item.finalPrice(wholeShopDiscount));
+        java.util.UUID playerId = player.getUniqueId();
+        // Le débit vient en premier, conditionné au solde dans la même requête : deux
+        // achats lancés avant que le premier débit n'arrive ne passent plus tous les deux.
+        databaseManager.removeTokensIfEnough(playerId, price).thenAccept(paid -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (!paid) {
                 player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.not-enough-money")));
+                return;
             }
+            if (!player.isOnline()) {
+                // Parti entre le clic et le débit : rien n'a été livré, le solde revient.
+                databaseManager.addTokens(playerId, price);
+                return;
+            }
+            // La chaîne Action DSL de l'item (conditions, messages, commandes…)
+            // s'exécute via le moteur d'actions Artisan, main-thread.
+            // Project en portée : les actions d'un article peuvent porter `@clé`,
+            // résolue dans les lang/ du project boutique.
+            plugin.getArtisanApi().getActions().execute(
+                    player, item.getActions(), java.util.Map.of(), ShopPlugin.PROJECT_ID);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));
+            databaseManager.addPurchaseHistory(playerId, item);
+            databaseManager.getTokensAsync(playerId).thenAccept(tokens -> plugin.getTokensCache().put(playerId, tokens));
         }));
     }
 
