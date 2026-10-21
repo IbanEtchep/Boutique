@@ -19,7 +19,7 @@ dependencies {
     // Artisan — a required dependency, provided at runtime by the Artisan plugin, never shaded.
     // API 2.11.0: a module command that opens a menu (PlayerCommandDeclaration.Builder.opensMenu).
     // Until it is released on repo.artisanmc.net, publish it from Artisan's v2 branch:
-    //   cd <artisan>/plugin && ./gradlew :artisan-api:publishToMavenLocal -PapiVersion=2.11.0
+    //   cd <artisan>/plugin && ./gradlew :artisan-api:publishToMavenLocal -PapiVersion=2.12.0
     compileOnly("net.artisanmc:artisan-core-api:${artisanApiVersion}")
     compileOnly('me.clip:placeholderapi:2.11.6')
     // Shaded into the jar, as with Maven before.

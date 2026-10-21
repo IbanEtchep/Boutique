@@ -26,7 +26,7 @@ import java.util.UUID;
 public final class ShopPlugin extends JavaPlugin {
 
     /** Première API où une commande de module ouvre un menu ({@code PlayerCommandDeclaration.Builder.opensMenu}). */
-    public static final String MIN_API_VERSION = "2.11.0";
+    public static final String MIN_API_VERSION = "2.12.0";
     /** Dossier du module sous plugins/Artisan/modules/, l'id de project enregistré avant. */
     public static final String PROJECT_ID = "boutique_addon";
     /** Ancienne racine, sous plugins/Boutique/, déplacée une fois dans le dossier du module. */

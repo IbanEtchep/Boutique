@@ -7,6 +7,7 @@ import net.artisanmc.modules.api.command.*;
 import net.artisanmc.modules.api.datasource.*;
 import net.artisanmc.modules.api.model.*;
 import net.artisanmc.modules.api.playercommand.PlayerCommandDeclaration;
+import net.artisanmc.modules.api.template.TemplateDeclaration;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -76,7 +77,27 @@ public final class BoutiqueModule implements ArtisanModule {
                 "id"));
         api.getCommands().register(new CommandDeclaration("boutique:buy", this::handleBuy));
         api.getPlayerCommands().register(openCommand());
+        api.getTemplates().register(systemMenus());
     }
+
+    /**
+     * Les menus et le dialogue que le code ouvre par leur id (API 2.12.0) : des éléments
+     * système du dossier. Artisan les écrit depuis ce JAR, les met à jour tant que l'admin n'y
+     * a pas touché, et l'éditeur les garde (ni suppression ni déplacement, un « Réinitialiser »).
+     * Mêmes octets que le bootstrap : une install vierge les a déjà, à l'identique.
+     * {@link #SYSTEM_MENUS_VERSION} monte à chaque changement de ces fichiers.
+     */
+    static TemplateDeclaration systemMenus() {
+        return TemplateDeclaration.fromResources(BoutiqueModule.class.getClassLoader(), "bootstrap",
+                        "menus", SYSTEM_MENUS_VERSION, SYSTEM_MENU_FILES)
+                .title("Menus de la boutique")
+                .system()
+                .build();
+    }
+
+    static final int SYSTEM_MENUS_VERSION = 1;
+    static final List<String> SYSTEM_MENU_FILES = List.of(
+            "menus/shop_main.yaml", "menus/shop_category.yaml", "dialogs/confirm_purchase.yaml");
 
     /**
      * {@code /boutique} : une commande du module (API 2.11.0) qui ouvre le menu principal du
