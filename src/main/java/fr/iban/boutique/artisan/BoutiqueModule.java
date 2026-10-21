@@ -6,6 +6,7 @@ import net.artisanmc.modules.api.action.*;
 import net.artisanmc.modules.api.command.*;
 import net.artisanmc.modules.api.datasource.*;
 import net.artisanmc.modules.api.model.*;
+import net.artisanmc.modules.api.playercommand.PlayerCommandDeclaration;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -19,6 +20,7 @@ public final class BoutiqueModule implements ArtisanModule {
     public BoutiqueModule(ShopPlugin plugin, ShopRepo repo) { this.plugin = plugin; this.repo = repo; }
 
     public static final String ID = "boutique";
+    public static final String OPEN_COMMAND = "boutique:open";
 
     @Override public String getId() { return ID; }
     @Override public String getSchemaVersion() { return "boutique/v1"; }
@@ -73,6 +75,20 @@ public final class BoutiqueModule implements ArtisanModule {
                 Stability.STATIC,
                 "id"));
         api.getCommands().register(new CommandDeclaration("boutique:buy", this::handleBuy));
+        api.getPlayerCommands().register(openCommand());
+    }
+
+    /**
+     * {@code /boutique} : une commande du module (API 2.11.0) qui ouvre le menu principal du
+     * dossier. L'admin la renomme, change sa permission ou ce qu'elle fait par un override
+     * (section Système de l'éditeur) ; elle reste joignable en {@code /boutique:boutique}.
+     */
+    static PlayerCommandDeclaration openCommand() {
+        return PlayerCommandDeclaration.builder(OPEN_COMMAND)
+                .name("boutique")
+                .description(Map.of("fr", "Ouvre la boutique", "en", "Opens the shop"))
+                .opensMenu(ShopPlugin.PROJECT_ID + ":shop_main")
+                .build();
     }
 
     /** Ligne categorie avec ses items IMBRIQUES - permet aussi bien le join

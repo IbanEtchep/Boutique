@@ -103,8 +103,9 @@ class LegacyInstallTest {
         assertEquals("item:ci_epee_en_diamant", item.getIcon());
         assertTrue(new File(projectDir, "items/ci_epee_en_diamant.yml").isFile());
 
-        // Les autres ressources bundlées sont là (menus, commande, dialogue, lang).
-        for (String res : List.of("manifest.yaml", "menus/shop_main.yaml", "commands/boutique.yaml",
+        // Les autres ressources bundlées sont là (menus, dialogue, lang) ; /boutique est
+        // une commande du module, plus un fichier.
+        for (String res : List.of("manifest.yaml", "menus/shop_main.yaml",
                 "dialogs/confirm_purchase.yaml", "lang/fr.yaml", "models/shop_settings.yaml")) {
             assertTrue(new File(projectDir, res).isFile(), res);
         }
