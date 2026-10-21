@@ -47,10 +47,10 @@ public final class BoutiqueModule implements ArtisanModule {
                         .map(this::categoryRow)
                         .collect(Collectors.toList()),
                 List.of(
-                        new DataSourceField("id", FieldKind.STRING, null),
-                        new DataSourceField("name", FieldKind.STRING, null),
-                        new DataSourceField("icon", FieldKind.ITEM, null),
-                        new DataSourceField("items", FieldKind.LIST, null)),
+                        new DataSourceField("id", ModelFieldType.string(), null),
+                        new DataSourceField("name", ModelFieldType.string(), null),
+                        new DataSourceField("icon", ModelFieldType.item(), null),
+                        new DataSourceField("items", ModelFieldType.list(ModelFieldType.string()), null)),
                 Stability.STATIC,
                 "id"));
         api.getDataSources().register(new DataSourceDeclaration(
@@ -60,16 +60,16 @@ public final class BoutiqueModule implements ArtisanModule {
                         .map(this::itemRow)
                         .collect(Collectors.toList()),
                 List.of(
-                        new DataSourceField("id", FieldKind.STRING, null),
-                        new DataSourceField("name", FieldKind.STRING, null),
-                        new DataSourceField("icon", FieldKind.ITEM, null),
-                        new DataSourceField("category", FieldKind.STRING, null),
-                        new DataSourceField("price", FieldKind.NUMBER, null),
-                        new DataSourceField("final_price", FieldKind.INTEGER, null),
+                        new DataSourceField("id", ModelFieldType.string(), null),
+                        new DataSourceField("name", ModelFieldType.string(), null),
+                        new DataSourceField("icon", ModelFieldType.item(), null),
+                        new DataSourceField("category", ModelFieldType.string(), null),
+                        new DataSourceField("price", ModelFieldType.number(), null),
+                        new DataSourceField("final_price", ModelFieldType.integer(), null),
                         // Prix déjà mis en forme par les réglages — un menu binde
                         // `{item.price_display}` au lieu de recomposer le texte.
-                        new DataSourceField("price_display", FieldKind.STRING, null),
-                        new DataSourceField("lore", FieldKind.STRING, null)),
+                        new DataSourceField("price_display", ModelFieldType.string(), null),
+                        new DataSourceField("lore", ModelFieldType.string(), null)),
                 Stability.STATIC,
                 "id"));
         api.getCommands().register(new CommandDeclaration("boutique:buy", this::handleBuy));
