@@ -25,7 +25,7 @@ class BootstrapWireFormatTest {
 
     private static final List<String> ACTION_BEARING = List.of(
             "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "commands/boutique.yaml", "dialogs/confirm_purchase.yaml");
+            "dialogs/confirm_purchase.yaml");
 
     private static Object load(String res) throws Exception {
         try (InputStream in = Bootstrapper.class.getResourceAsStream("/bootstrap/" + res)) {

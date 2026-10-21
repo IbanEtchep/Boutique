@@ -23,7 +23,7 @@ public final class Bootstrapper {
 
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
-            "dialogs/confirm_purchase.yaml", "commands/boutique.yaml",
+            "dialogs/confirm_purchase.yaml",
             "data/categories/_source.yaml", "data/categories/weapons.yaml",
             "data/shop_settings.yaml",
             // Ref d'une ligne vers le model DÉCLARÉ : le schéma vit dans ce JAR,

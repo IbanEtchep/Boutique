@@ -17,9 +17,9 @@ repositories {
 dependencies {
     compileOnly('io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT')
     // Artisan — a required dependency, provided at runtime by the Artisan plugin, never shaded.
-    // API 2.8.0: module folders (ProjectRootRegistry.moduleFolder). Until it is released on
-    // repo.artisanmc.net, publish it from Artisan's v2 branch:
-    //   cd <artisan>/plugin && ./gradlew :artisan-api:publishToMavenLocal -PapiVersion=2.8.0
+    // API 2.11.0: a module command that opens a menu (PlayerCommandDeclaration.Builder.opensMenu).
+    // Until it is released on repo.artisanmc.net, publish it from Artisan's v2 branch:
+    //   cd <artisan>/plugin && ./gradlew :artisan-api:publishToMavenLocal -PapiVersion=2.11.0
     compileOnly("net.artisanmc:artisan-core-api:${artisanApiVersion}")
     compileOnly('me.clip:placeholderapi:2.11.6')
     // Shaded into the jar, as with Maven before.

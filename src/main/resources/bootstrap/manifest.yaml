@@ -4,5 +4,4 @@ default_lang: fr
 languages: [fr]
 files:
   menus: [shop_main, shop_category]
-  commands: [boutique]
   dialogs: [confirm_purchase]

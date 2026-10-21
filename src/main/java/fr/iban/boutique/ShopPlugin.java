@@ -25,8 +25,8 @@ import java.util.UUID;
 
 public final class ShopPlugin extends JavaPlugin {
 
-    /** Première API avec les dossiers de module ({@code ProjectRootRegistry.moduleFolder}). */
-    public static final String MIN_API_VERSION = "2.8.0";
+    /** Première API où une commande de module ouvre un menu ({@code PlayerCommandDeclaration.Builder.opensMenu}). */
+    public static final String MIN_API_VERSION = "2.11.0";
     /** Dossier du module sous plugins/Artisan/modules/, l'id de project enregistré avant. */
     public static final String PROJECT_ID = "boutique_addon";
     /** Ancienne racine, sous plugins/Boutique/, déplacée une fois dans le dossier du module. */
@@ -152,6 +152,21 @@ public final class ShopPlugin extends JavaPlugin {
         if (fr.iban.boutique.artisan.CatalogIconMigrator.migrateIfNeeded(projectDir, getDataFolder())) {
             wroteContent = true;
             getLogger().info("Lore du catalogue déplacé dans les icônes (sauvegarde : catalog-icon-backup).");
+        }
+
+        try {
+            switch (fr.iban.boutique.artisan.ShopCommandMigrator.migrate(projectDir)) {
+                case REMOVED -> {
+                    wroteContent = true;
+                    getLogger().info("commands/boutique.yaml retiré : /boutique est maintenant une commande du module (section Système de l'éditeur).");
+                }
+                case KEPT_CUSTOM -> getLogger().warning("commands/boutique.yaml a été modifié : il est gardé et garde le nom /boutique, "
+                        + "la commande du module reste joignable en /boutique:boutique. Pour basculer, reporte tes changements "
+                        + "dans un override de boutique:open (section Système de l'éditeur) puis supprime ce fichier.");
+                case NONE -> { }
+            }
+        } catch (IOException e) {
+            getLogger().warning("Migration de commands/boutique.yaml impossible : " + e.getMessage());
         }
 
         try {
