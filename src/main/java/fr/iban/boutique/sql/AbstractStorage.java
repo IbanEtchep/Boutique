@@ -16,5 +16,8 @@ public abstract class AbstractStorage {
 
     public abstract void removeTokens(UUID uuid, int amount);
 
+    /** Debits [amount] only if the balance covers it, in one statement: true when it did. */
+    public abstract boolean removeTokensIfEnough(UUID uuid, int amount);
+
     public abstract void addPurchaseHistory(UUID uuid, ShopItem item);
 }

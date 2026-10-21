@@ -16,9 +16,22 @@ public class DatabaseManager {
     private final ShopPlugin plugin;
     public AbstractStorage storage;
 
+    /** JDBC blocks: its own threads, not the JVM's common pool every plugin shares. */
+    private final java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "Boutique-db");
+        t.setDaemon(true);
+        return t;
+    });
+
     public DatabaseManager(ShopPlugin plugin) {
         this.storage = new SqlStorage();
         this.plugin = plugin;
+        // The tables, off onEnable: an unreachable database costs nothing on the main thread.
+        executor.execute(fr.iban.boutique.sql.DbTables::createTables);
+    }
+
+    public void shutdown() {
+        executor.shutdown();
     }
 
     public int getTokens(UUID uuid) {
@@ -39,6 +52,11 @@ public class DatabaseManager {
         return future(() -> {
             storage.removeTokens(uuid, amount);
         });
+    }
+
+    /** Debits [amount] if the balance covers it: the check and the debit are one statement, so two purchases cannot both pass. */
+    public CompletableFuture<Boolean> removeTokensIfEnough(UUID uuid, int amount){
+        return future(() -> storage.removeTokensIfEnough(uuid, amount));
     }
 
     public CompletableFuture<Void> addTokens(UUID uuid, int amount){
@@ -64,7 +82,7 @@ public class DatabaseManager {
                 }
                 throw new CompletionException(e);
             }
-        });
+        }, executor);
     }
 
     public CompletableFuture<Void> future(Runnable runnable) {
@@ -74,6 +92,6 @@ public class DatabaseManager {
             } catch (Exception e) {
                 throw e;
             }
-        });
+        }, executor);
     }
 }

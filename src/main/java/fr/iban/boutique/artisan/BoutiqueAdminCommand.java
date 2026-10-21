@@ -18,7 +18,7 @@ import java.util.Map;
  * via le message module `boutique_additem` ; le backend mutait sa copie du
  * project et rebroadcastait. Le backend ne stocke plus aucun contenu (ADR
  * Artisan `server-disk-only-storage`) : on écrit désormais **directement** dans
- * la racine que ce module possède, et le scan disque d'Artisan recharge à chaud.
+ * la racine que ce module possède, hors du thread principal, puis demande la relecture à Artisan.
  *
  * Le fichier écrit EST la vérité — il n'y a rien à pousser derrière. Reste à le
  * DÉCLARER : le core sert un instantané pris au chargement (sémantique de
@@ -66,22 +66,25 @@ public final class BoutiqueAdminCommand implements CommandExecutor {
             return true;
         }
 
+        // The item is read on the main thread; the YAML files are read, parsed and
+        // written off it, then Artisan re-reads the projects (its own thread).
         Map<String, Object> display = api.getItems().describe(held);
-        CapturedItemWriter.Result res = CapturedItemWriter.addItem(
-                projectDir,
-                args[1],
-                price,
-                args.length >= 4 ? args[3] : null,
-                api.getItems().serialize(held),
-                display);
-
-        if (!res.ok()) {
-            player.sendMessage("§cCapture impossible : " + res.error());
-            return true;
-        }
-        api.getProject().reload();
-        player.sendMessage("§a« " + args[1] + " » (" + price + ") ajouté à la boutique. "
-                + "Complète les commandes d'achat dans l'éditeur.");
+        String serialized = api.getItems().serialize(held);
+        String id = args[1];
+        String category = args.length >= 4 ? args[3] : null;
+        org.bukkit.plugin.Plugin plugin = org.bukkit.plugin.java.JavaPlugin.getProvidingPlugin(getClass());
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            CapturedItemWriter.Result res = CapturedItemWriter.addItem(projectDir, id, price, category, serialized, display);
+            if (res.ok()) api.getProject().reload();
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!res.ok()) {
+                    player.sendMessage("§cCapture impossible : " + res.error());
+                    return;
+                }
+                player.sendMessage("§a« " + id + " » (" + price + ") ajouté à la boutique. "
+                        + "Complète les commandes d'achat dans l'éditeur.");
+            });
+        });
         return true;
     }
 }
