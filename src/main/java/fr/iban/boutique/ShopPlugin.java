@@ -159,10 +159,14 @@ public final class ShopPlugin extends JavaPlugin {
         try {
             switch (fr.iban.boutique.artisan.ShopCommandMigrator.migrate(projectDir)) {
                 case REMOVED ->
-                    getLogger().info("commands/boutique.yaml retiré : /boutique est maintenant une commande du module (section Système de l'éditeur).");
-                case KEPT_CUSTOM -> getLogger().warning("commands/boutique.yaml a été modifié : il est gardé et garde le nom /boutique, "
-                        + "la commande du module reste joignable en /boutique:boutique. Pour basculer, reporte tes changements "
-                        + "dans un override de boutique:open (section Système de l'éditeur) puis supprime ce fichier.");
+                    getLogger().info("Ancien commands/boutique.yaml retiré : Artisan y écrit la commande du module /boutique.");
+                case KEPT_CUSTOM -> {
+                    if (!migrations.isDone("shop-command-kept")) {
+                        getLogger().info("commands/boutique.yaml a été modifié : il est gardé et sert de fichier à la commande "
+                                + "du module /boutique. Reset dans l'éditeur remet la version du module.");
+                        migrations.markDone("shop-command-kept");
+                    }
+                }
                 case NONE -> { }
             }
         } catch (IOException e) {
