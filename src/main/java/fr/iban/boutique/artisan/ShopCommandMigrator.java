@@ -15,11 +15,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * {@code /boutique} est devenue une commande du module ({@code boutique:open}, API 2.11.0).
- * Le {@code commands/boutique.yaml} que les versions précédentes posaient dans le dossier
- * garderait le nom {@code /boutique} (une commande de dossier passe avant celle d'un module) :
- * il part, avec son entrée du manifest, tant qu'il est resté celui livré. Modifié par l'admin,
- * il est gardé tel quel et le log dit comment basculer.
+ * {@code /boutique} est devenue une commande du module ({@code boutique:open}, API 2.11.0), qu'Artisan
+ * écrit lui-même en {@code commands/boutique.yaml} du dossier et remplace à chaque version tant
+ * qu'elle n'est pas modifiée. Le fichier que les versions précédentes posaient au même chemin (il
+ * porte {@code id: boutique}, celui d'Artisan non) compterait comme modifié et resterait pour
+ * toujours : il part, avec son entrée du manifest, tant qu'il est resté celui livré, et Artisan
+ * écrit le sien. Modifié par l'admin, il est gardé tel quel : c'est désormais le fichier de la
+ * commande du module.
  */
 public final class ShopCommandMigrator {
     public enum Result { NONE, REMOVED, KEPT_CUSTOM }
@@ -33,21 +35,30 @@ public final class ShopCommandMigrator {
     public static Result migrate(File projectDir) throws IOException {
         Path file = projectDir.toPath().resolve(FILE);
         if (!Files.isRegularFile(file)) return Result.NONE;
-        if (!isShipped(Files.readString(file))) return Result.KEPT_CUSTOM;
+        String content = Files.readString(file);
+        if (!isLegacy(content)) return Result.NONE;
+        if (!isShipped(content)) return Result.KEPT_CUSTOM;
         Files.delete(file);
         removeFromManifest(projectDir.toPath().resolve("manifest.yaml"));
         return Result.REMOVED;
     }
 
+    /** Written by an older Boutique (with an {@code id}), where Artisan's command file has none. */
+    static boolean isLegacy(String content) {
+        return load(content) instanceof Map<?, ?> map && map.containsKey("id");
+    }
+
+    private static Object load(String content) {
+        try {
+            return new Yaml().load(content);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     /** The file the bootstrap wrote: {@code open_menu shop_main}, the shipped name and description. */
     static boolean isShipped(String content) {
-        Object loaded;
-        try {
-            loaded = new Yaml().load(content);
-        } catch (RuntimeException e) {
-            return false;
-        }
-        if (!(loaded instanceof Map<?, ?> map)) return false;
+        if (!(load(content) instanceof Map<?, ?> map)) return false;
         for (Object key : map.keySet()) if (!SHIPPED_KEYS.contains(String.valueOf(key))) return false;
         Object description = map.get("description");
         return "command/v1".equals(map.get("schema"))

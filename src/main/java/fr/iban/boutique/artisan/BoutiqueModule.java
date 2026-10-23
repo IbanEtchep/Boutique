@@ -102,8 +102,9 @@ public final class BoutiqueModule implements ArtisanModule {
 
     /**
      * {@code /boutique} : une commande du module (API 2.11.0) qui ouvre le menu principal du
-     * dossier. L'admin la renomme, change sa permission ou ce qu'elle fait par un override
-     * (section Système de l'éditeur) ; elle reste joignable en {@code /boutique:boutique}.
+     * dossier. Artisan l'écrit en {@code commands/boutique.yaml} du dossier ({@code open_menu}) ;
+     * l'admin la renomme, change sa permission ou ce qu'elle fait en modifiant ce fichier. Elle
+     * reste joignable en {@code /boutique:boutique}.
      */
     static PlayerCommandDeclaration openCommand() {
         return PlayerCommandDeclaration.builder(OPEN_COMMAND)

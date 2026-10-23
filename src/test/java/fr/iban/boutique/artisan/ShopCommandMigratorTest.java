@@ -64,6 +64,23 @@ class ShopCommandMigratorTest {
     }
 
     @Test
+    void artisansOwnCommandFileIsLeftToArtisan(@TempDir Path dir) throws IOException {
+        String artisan = """
+                schema: command/v1
+                name: boutique
+                actions:
+                  - open_menu: boutique_addon:shop_main
+                description:
+                  fr: Ouvre la boutique
+                  en: Opens the shop
+                """;
+        folder(dir, artisan, MANIFEST);
+        assertEquals(ShopCommandMigrator.Result.NONE, ShopCommandMigrator.migrate(dir.toFile()));
+        assertEquals(artisan, Files.readString(dir.resolve("commands/boutique.yaml")));
+        assertEquals(MANIFEST, Files.readString(dir.resolve("manifest.yaml")));
+    }
+
+    @Test
     void anAddedPermissionOrAliasCountsAsAChange() {
         assertFalse(ShopCommandMigrator.isShipped(SHIPPED + "permission: boutique.use\n"));
         assertFalse(ShopCommandMigrator.isShipped(SHIPPED.replace("Ouvre la boutique", "La boutique")));
