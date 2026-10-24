@@ -20,8 +20,9 @@ public final class ManifestCleaner {
 
     /** @return true when the manifest was rewritten. */
     public static boolean removeLegacyProjectId(File projectDir) throws IOException {
-        Path manifest = projectDir.toPath().resolve("manifest.yaml");
-        if (!Files.isRegularFile(manifest)) return false;
+        File moduleFile = YamlFiles.moduleFile(projectDir);
+        if (moduleFile == null) return false;
+        Path manifest = moduleFile.toPath();
         String before = Files.readString(manifest);
         String after = PROJECT_ID.matcher(before).replaceAll("");
         if (after.equals(before)) return false;

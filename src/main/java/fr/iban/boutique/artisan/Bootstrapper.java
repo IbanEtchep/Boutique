@@ -43,8 +43,7 @@ public final class Bootstrapper {
      * laisse donc jamais de manifest, et le démarrage suivant recommence.
      */
     public static boolean bootstrapIfAbsent(File projectDir, Optional<java.util.Map<String, String>> migratedFiles) throws IOException {
-        File manifest = new File(projectDir, "manifest.yaml");
-        if (manifest.exists()) return false;
+        if (YamlFiles.moduleFile(projectDir) != null) return false;
 
         File parent = projectDir.getParentFile();
         File tmpDir = new File(parent, "." + projectDir.getName() + ".tmp");
