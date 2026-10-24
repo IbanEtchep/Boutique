@@ -2,6 +2,7 @@ import { createModuleI18n } from "@artisan/editor-sdk";
 
 const en = {
   kindLabel: "Shop categories",
+  collection: "Catalog",
   category: "Category",
   name: "Name",
   icon: "Icon",
@@ -41,6 +42,7 @@ type Key = keyof typeof en;
 
 const fr: Record<Key, string> = {
   kindLabel: "Catégories de boutique",
+  collection: "Catalogue",
   category: "Catégorie",
   name: "Nom",
   icon: "Icône",
@@ -78,6 +80,7 @@ const fr: Record<Key, string> = {
 };
 
 export const LABELS = { en: en.kindLabel, fr: fr.kindLabel };
+export const COLLECTION_LABELS = { en: en.collection, fr: fr.collection };
 
 export const useT = createModuleI18n<Key>({ en, fr });
 export type T = ReturnType<typeof useT>;

@@ -53,6 +53,18 @@ class CategoryKindMigratorTest {
     }
 
     @Test
+    void namesTheCategoryFilesTheShopDoesNotRead() {
+        assertEquals(
+                List.of("catalogue/boutique_categories/keys.yml", "boutique_categories/old/kits.yaml"),
+                CategoryKindMigrator.misplaced(List.of(
+                        "boutique_categories/divers.yml",
+                        "catalogue/boutique_categories/keys.yml",
+                        "boutique_categories/old/kits.yaml",
+                        "catalogue/menus/shop_main.yml",
+                        "catalogue/boutique_categories/notes.txt")));
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void eachRowBecomesADocumentAndTheTableGoes(@TempDir Path root) throws Exception {
         Path project = seed(root);

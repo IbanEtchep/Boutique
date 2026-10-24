@@ -2,7 +2,7 @@ import type { DocumentKindContribution } from "@artisan/editor-sdk";
 import { textValue } from "@artisan/editor-sdk";
 import { CategoryEditor } from "./CategoryEditor";
 import { SHOP_ACCENT, categoryBoardItems, categoryBoardSummary, plainText } from "./board";
-import { LABELS } from "./i18n";
+import { COLLECTION_LABELS, LABELS } from "./i18n";
 import {
   type Category,
   DIR,
@@ -24,6 +24,9 @@ export const categoryKind: DocumentKindContribution = {
   schemaVersion: SCHEMA,
   // A category's id names it in the menus (`category` of shop_category): typed by hand.
   projects: [PROJECT],
+  // The catalogue (SDK 1.9): one entry and one page, off the board, its settings on top.
+  // The categories stay in boutique_categories/ at the folder's root, the only place read.
+  collection: { labels: COLLECTION_LABELS, screen: "boutique:settings" },
   label: LABELS.en,
   labels: LABELS,
   component: CategoryEditor,
