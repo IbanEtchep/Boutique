@@ -14,17 +14,17 @@ public class TokensCMD implements CommandExecutor {
 
     private ShopPlugin plugin;
     private DatabaseManager dbManager;
-    private String currency;
 
 
     public TokensCMD(ShopPlugin shopPlugin) {
         this.plugin = shopPlugin;
         dbManager = plugin.getDatabaseManager();
-        currency = plugin.getConfig().getString("messages.currency-name");
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+        // Lu à chaque commande : les Réglages de l'éditeur s'appliquent sans redémarrage.
+        String currency = plugin.getSettings().messages().currencyName();
         if(sender.hasPermission("tokens.admin")){
             if(args.length >= 2){
                 OfflinePlayer to = Bukkit.getOfflinePlayer(args[1]);

@@ -20,7 +20,9 @@ class ShopModelsTest {
         ModelRegistry registry = new ModelRegistry();
         registry.declare(ShopModels.item());
         registry.declare(ShopModels.category());
+        registry.declare(ShopModels.shopSettings());
         assertTrue(registry.has("boutique:item"));
+        assertTrue(registry.has("boutique:shop_settings"));
         assertTrue(registry.has("boutique:category"));
     }
 

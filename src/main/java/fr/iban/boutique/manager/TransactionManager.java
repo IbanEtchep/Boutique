@@ -18,7 +18,7 @@ public class TransactionManager {
 
     public void buy(Player player, ShopItem item, int wholeShopDiscount) {
         if (!item.hasActions()) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.no-buy-commands")));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getSettings().messages().noBuyCommands()));
             return;
         }
         int price = (int) Math.round(item.finalPrice(wholeShopDiscount));
@@ -27,7 +27,7 @@ public class TransactionManager {
         // achats lancés avant que le premier débit n'arrive ne passent plus tous les deux.
         databaseManager.removeTokensIfEnough(playerId, price).thenAccept(paid -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (!paid) {
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.not-enough-money")));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getSettings().messages().notEnoughMoney()));
                 return;
             }
             if (!player.isOnline()) {
@@ -41,7 +41,7 @@ public class TransactionManager {
             // une action peut porter `@clé`, résolue dans les lang/ du dossier boutique.
             plugin.getArtisanApi().getActions().run(
                     player, item.getActions(), java.util.Map.of(), ShopPlugin.PROJECT_ID);
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getSettings().messages().buySuccess()));
             databaseManager.addPurchaseHistory(playerId, item);
             databaseManager.getTokensAsync(playerId).thenAccept(tokens -> plugin.getTokensCache().put(playerId, tokens));
         }));

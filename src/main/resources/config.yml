@@ -1,25 +1,10 @@
-#Azuriom database
+# Base de données Azuriom de ce serveur.
+# La remise globale, les formats de prix et les messages sont dans
+# plugins/Artisan/modules/boutique_addon/data/shop_settings.yml, édités dans l'éditeur Artisan
+# (dossier boutique, Réglages).
 database:
   host: host
   port: port
   dbname: name
   user: user
   password: password
-
-#Discount in percentage applied to whole shop.
-whole-shop-discount: 0
-
-messages:
-  currency-name: "tokens"
-  not-enough-money: "&cVous n'avez pas assez de tokens pour acheter ça !"
-  buy-success: "&aVotre achat a été un succès !"
-  no-buy-commands: "&cCet article n'est pas disponible à l'achat pour le moment."
-  buy-link: "https://lien.fr/"
-
-placeholders:
-  # %price_display% placeholder's format (you can use %price% placeholder)
-  price-display: "%price% tokens"
-  # %promo_price_display% placeholder's format (you can use %price%, %old_price% and %discount_percent% placeholders)
-  # %price_display% is replaced by this placeholder when item is discounted
-  discount-price-display: "&m%old_price% &f%price% tokens (-%discount_percent%%)"
-

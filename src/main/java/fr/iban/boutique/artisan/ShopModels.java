@@ -96,7 +96,24 @@ public final class ShopModels {
                         field("discount_price_display", kind("string"), Map.of(
                                 "label", "Format du prix en promotion",
                                 "help", "Placeholders : %price%, %old_price%, %discount_percent%."))
-                )), Map.of("label", "Affichage des prix"))
+                )), Map.of("label", "Affichage des prix")),
+                field("messages", Map.of("kind", "object", "fields", List.of(
+                        field("currency_name", kind("string"), Map.of(
+                                "label", "Nom de la monnaie",
+                                "help", "Dans les réponses de /tokens.",
+                                "default", DEFAULT_CURRENCY_NAME)),
+                        field("buy_success", kind("string"), Map.of(
+                                "label", "Achat réussi",
+                                "help", "Codes couleur en &.",
+                                "default", DEFAULT_BUY_SUCCESS)),
+                        field("not_enough_money", kind("string"), Map.of(
+                                "label", "Solde insuffisant",
+                                "default", DEFAULT_NOT_ENOUGH_MONEY)),
+                        field("no_buy_commands", kind("string"), Map.of(
+                                "label", "Article sans action",
+                                "help", "Quand l'article n'a rien à exécuter après le paiement.",
+                                "default", DEFAULT_NO_BUY_COMMANDS))
+                )), Map.of("label", "Messages"))
         ));
         return doc;
     }
@@ -105,4 +122,10 @@ public final class ShopModels {
     public static final String DEFAULT_PRICE_DISPLAY = "%price% tokens";
     public static final String DEFAULT_DISCOUNT_PRICE_DISPLAY =
             "&m%old_price% &f%price% tokens (-%discount_percent%%)";
+
+    /** Messages par défaut — ceux du `config.yml` historique. */
+    public static final String DEFAULT_CURRENCY_NAME = "tokens";
+    public static final String DEFAULT_BUY_SUCCESS = "&aVotre achat a été un succès !";
+    public static final String DEFAULT_NOT_ENOUGH_MONEY = "&cVous n'avez pas assez de tokens pour acheter ça !";
+    public static final String DEFAULT_NO_BUY_COMMANDS = "&cCet article n'est pas disponible à l'achat pour le moment.";
 }

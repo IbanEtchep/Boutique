@@ -31,6 +31,9 @@ public final class BoutiqueModule implements ArtisanModule {
     /** Réglages courants (rechargés avec le repo). */
     private volatile ShopSettings settings = ShopSettings.defaults();
 
+    /** Les réglages de {@code data/shop_settings}, lus au dernier onReload (les défauts avant). */
+    public ShopSettings settings() { return settings; }
+
     @Override public void onEnable(ArtisanAPI api) {
         this.api = api;
         // Declared Data models (ADR composable-data-models §4): the editor

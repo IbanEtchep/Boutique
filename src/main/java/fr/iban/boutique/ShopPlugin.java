@@ -36,6 +36,7 @@ public final class ShopPlugin extends JavaPlugin {
     private TransactionManager transactionManager;
     private DatabaseManager databaseManager;
     private ShopRepo shopRepo;
+    private BoutiqueModule module;
     private net.artisanmc.modules.api.ArtisanAPI artisanApi;
     private static ShopPlugin instance;
     /** Écrit depuis les tâches async (join, achat), lu sur le thread principal (placeholders). */
@@ -217,23 +218,34 @@ public final class ShopPlugin extends JavaPlugin {
             getLogger().warning("Nettoyage du manifest impossible : " + e.getMessage());
         }
 
-        // One-shot (ADR yaml-assisted-editing) : les formats de prix vivaient
-        // dans config.yml où plus aucun code ne les lisait — ils deviennent des
-        // réglages éditables du project, typés par le model déclaré.
-        // Les formats du config.yml legacy ne priment qu'une fois : ensuite, un
-        // admin qui remet exactement les défauts les garde.
+        // One-shot (ADR yaml-assisted-editing) : les formats de prix et les messages vivaient
+        // dans config.yml ; ils deviennent des réglages éditables du dossier du module, typés
+        // par le model déclaré. Les valeurs du config.yml ne priment qu'une fois chacune :
+        // ensuite, un admin qui remet exactement les défauts les garde. Une fois les réglages
+        // en place, config.yml ne garde que la base de données, propre à ce serveur.
         boolean legacyFormats = !migrations.isDone("settings-placeholders");
-        if (fr.iban.boutique.artisan.SettingsMigrator.ensureSettings(
-                projectDir,
-                legacyFormats ? getConfig().getString("placeholders.price-display") : null,
-                legacyFormats ? getConfig().getString("placeholders.discount-price-display") : null,
-                legacyFormats)) {
-            getLogger().info("Formats de prix repris dans data/shop_settings.yaml (éditables depuis l'éditeur).");
+        boolean legacyMessages = !migrations.isDone("settings-messages");
+        if (fr.iban.boutique.artisan.SettingsMigrator.ensureSettings(projectDir,
+                fr.iban.boutique.artisan.SettingsMigrator.legacy(getConfig(), legacyFormats, legacyMessages))) {
+            getLogger().info("Formats de prix et messages repris dans data/shop_settings (éditables depuis l'éditeur, Réglages).");
         }
         migrations.markDone("settings-placeholders");
+        if (fr.iban.boutique.artisan.SettingsMigrator.holdsContent(projectDir)) {
+            migrations.markDone("settings-messages");
+            try {
+                if (fr.iban.boutique.artisan.SettingsMigrator.slimConfig(new File(getDataFolder(), "config.yml"))) {
+                    reloadConfig();
+                    getLogger().info("config.yml ne garde que la base de données : le reste est dans "
+                            + projectDir.getPath() + "/data/shop_settings (copie d'avant : config.yml.before-settings).");
+                }
+            } catch (IOException e) {
+                getLogger().warning("Nettoyage de config.yml impossible : " + e.getMessage());
+            }
+        }
 
         this.shopRepo = new ShopRepo();
-        api.getModules().register(new BoutiqueModule(this, shopRepo));
+        this.module = new BoutiqueModule(this, shopRepo);
+        api.getModules().register(module);
         getCommand("boutiqueadmin").setExecutor(new fr.iban.boutique.artisan.BoutiqueAdminCommand(api, projectDir));
     }
 
@@ -256,6 +268,11 @@ public final class ShopPlugin extends JavaPlugin {
 
     public net.artisanmc.modules.api.ArtisanAPI getArtisanApi() {
         return artisanApi;
+    }
+
+    /** Les réglages du dossier du module ({@code data/shop_settings}) : messages, formats de prix. */
+    public fr.iban.boutique.artisan.ShopSettings getSettings() {
+        return module != null ? module.settings() : fr.iban.boutique.artisan.ShopSettings.defaults();
     }
 
     public TransactionManager getTransactionManager() {
