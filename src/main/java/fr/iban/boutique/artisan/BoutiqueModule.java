@@ -207,7 +207,7 @@ public final class BoutiqueModule implements ArtisanModule {
         // The former declared-model Table (ADR composable-data-models §8), then the legacy
         // boutique/shop.yaml: still read for a folder the migration could not convert.
         List<String> rows = api.getProject().list(pid, "data/categories").stream()
-                .filter(rel -> rel.endsWith(".yaml") && !rel.equals("_source.yaml"))
+                .filter(rel -> YamlFiles.isYaml(rel) && !"_source".equals(YamlFiles.stem(rel)))
                 .collect(Collectors.toList());
         if (!rows.isEmpty()) {
             repo.loadFromDataTable(

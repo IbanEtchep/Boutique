@@ -33,13 +33,15 @@ public final class ShopCommandMigrator {
     private ShopCommandMigrator() {}
 
     public static Result migrate(File projectDir) throws IOException {
-        Path file = projectDir.toPath().resolve(FILE);
-        if (!Files.isRegularFile(file)) return Result.NONE;
+        File found = YamlFiles.find(new File(projectDir, "commands"), "boutique");
+        if (found == null) return Result.NONE;
+        Path file = found.toPath();
         String content = Files.readString(file);
         if (!isLegacy(content)) return Result.NONE;
         if (!isShipped(content)) return Result.KEPT_CUSTOM;
         Files.delete(file);
-        removeFromManifest(projectDir.toPath().resolve("manifest.yaml"));
+        File moduleFile = YamlFiles.moduleFile(projectDir);
+        if (moduleFile != null) removeFromManifest(moduleFile.toPath());
         return Result.REMOVED;
     }
 

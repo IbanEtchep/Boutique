@@ -275,8 +275,8 @@ public final class ShopDataMigrator {
     /** Un menu absent du manifeste n'est pas lu par le plugin. */
     @SuppressWarnings("unchecked")
     private static void rewriteManifestMenus(File projectDir, List<String> menuIds, Yaml yaml) throws IOException {
-        File manifestFile = new File(projectDir, "manifest.yaml");
-        if (!manifestFile.isFile()) return;
+        File manifestFile = YamlFiles.moduleFile(projectDir);
+        if (manifestFile == null) return;
         Map<String, Object> manifest = yaml.load(Files.readString(manifestFile.toPath()));
         if (manifest == null) return;
         Object rawFiles = manifest.get("files");
@@ -289,7 +289,7 @@ public final class ShopDataMigrator {
     }
 
     private static File sourceMetaFile(File projectDir) {
-        return new File(projectDir, "data/categories/_source.yaml");
+        return YamlFiles.target(new File(projectDir, "data/categories"), "_source");
     }
 
     /**
@@ -314,8 +314,8 @@ public final class ShopDataMigrator {
         for (String res : Bootstrapper.EXAMPLE_CATALOG) {
             try (InputStream in = Bootstrapper.class.getResourceAsStream("/bootstrap/" + res)) {
                 if (in == null) return false;
-                File onDisk = new File(projectDir, res);
-                if (!onDisk.isFile()) return false;
+                File onDisk = onDisk(projectDir, res);
+                if (onDisk == null) return false;
                 if (!Arrays.equals(in.readAllBytes(), Files.readAllBytes(onDisk.toPath()))) return false;
             } catch (IOException e) {
                 return false;
@@ -326,9 +326,15 @@ public final class ShopDataMigrator {
 
     private static void deleteExampleCatalog(File projectDir) {
         for (String res : Bootstrapper.EXAMPLE_CATALOG) {
-            File f = new File(projectDir, res);
-            if (f.isFile() && !f.delete()) f.deleteOnExit();
+            File f = onDisk(projectDir, res);
+            if (f != null && !f.delete()) f.deleteOnExit();
         }
+    }
+
+    /** The bundled file {@code res} ({@code data/categories/weapons.yaml}) on disk, under either extension. */
+    private static File onDisk(File projectDir, String res) {
+        File bundled = new File(projectDir, res);
+        return YamlFiles.find(bundled.getParentFile(), YamlFiles.stem(bundled.getName()));
     }
 
     /** ltext values stay LITERAL default-language text (ADR bare-data-files ④). */

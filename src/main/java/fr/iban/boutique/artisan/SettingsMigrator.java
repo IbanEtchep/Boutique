@@ -45,8 +45,9 @@ public final class SettingsMigrator {
 
     @SuppressWarnings("unchecked")
     private static boolean apply(File projectDir, String legacyPrice, String legacyDiscount, boolean takeLegacy) throws IOException {
-        File settingsFile = new File(projectDir, "data/shop_settings.yaml");
-        if (!settingsFile.getParentFile().isDirectory()) return false;
+        File dataDir = new File(projectDir, "data");
+        if (!dataDir.isDirectory()) return false;
+        File settingsFile = YamlFiles.target(dataDir, "shop_settings");
 
         Map<String, Object> root = new LinkedHashMap<>();
         if (settingsFile.isFile()) {
@@ -82,10 +83,9 @@ public final class SettingsMigrator {
     /** `models/<id>.yaml` = ref d'une ligne : le schéma déclaré vit dans le JAR. */
     private static boolean ensureBesideRef(File projectDir) throws IOException {
         File models = new File(projectDir, "models");
-        File ref = new File(models, "shop_settings.yaml");
-        if (ref.isFile()) return false;
+        if (YamlFiles.find(models, "shop_settings") != null) return false;
         if (!models.isDirectory() && !models.mkdirs()) return false;
-        Files.writeString(ref.toPath(), "model: boutique:shop_settings\n");
+        Files.writeString(YamlFiles.target(models, "shop_settings").toPath(), "model: boutique:shop_settings\n");
         return true;
     }
 

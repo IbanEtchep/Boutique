@@ -25,7 +25,7 @@ import java.util.UUID;
  * édition faite à la main ou par un agent.
  *
  * Forme écrite : les Documents {@code boutique_category} du dossier
- * ({@code boutique_categories/<id>.yaml}) — {@code name} porte le littéral, aucune clé n'est
+ * ({@code boutique_categories/<id>.yml}, ou {@code .yaml}) — {@code name} porte le littéral, aucune clé n'est
  * mintée et {@code lang/} n'est pas touché. Un catalogue d'avant ({@code boutique/shop.yaml},
  * {@code data/categories/}) est déjà converti au boot ({@link ShopDataMigrator},
  * {@link CategoryKindMigrator}), il n'a donc pas à être géré ici.
@@ -49,7 +49,7 @@ public final class CapturedItemWriter {
             Map<String, Object> display) {
         File catDir = new File(projectDir, CategoryKindMigrator.DIR);
         // Pas de project = rien à muter : on le dit, on n'en invente pas un.
-        if (!new File(projectDir, "manifest.yaml").isFile()) {
+        if (YamlFiles.moduleFile(projectDir) == null) {
             return Result.failed("aucun project Boutique dans " + projectDir.getPath());
         }
         try {
@@ -113,7 +113,7 @@ public final class CapturedItemWriter {
             }
             row.put("items", items);
             Files.createDirectories(catDir.toPath());
-            Files.writeString(new File(catDir, rowKey + ".yaml").toPath(), yaml.dump(row));
+            Files.writeString(YamlFiles.target(catDir, rowKey).toPath(), yaml.dump(row));
             return Result.written(ciId);
         } catch (IOException | RuntimeException e) {
             return Result.failed(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
@@ -159,11 +159,9 @@ public final class CapturedItemWriter {
     /** The folder's categories, file name → content, in the shop's order (`order`, then id). */
     private static List<Map.Entry<String, Map<String, Object>>> categories(Yaml yaml, File dir) {
         List<Map.Entry<String, Map<String, Object>>> out = new ArrayList<>();
-        File[] files = dir.listFiles((d, name) -> name.endsWith(".yaml") && !name.startsWith("."));
-        if (files == null) return out;
-        for (File file : files) {
-            Map<String, Object> parsed = load(yaml, file);
-            if (!parsed.isEmpty()) out.add(Map.entry(file.getName().replaceFirst("\\.yaml$", ""), parsed));
+        for (Map.Entry<String, File> file : YamlFiles.list(dir).entrySet()) {
+            Map<String, Object> parsed = load(yaml, file.getValue());
+            if (!parsed.isEmpty()) out.add(Map.entry(file.getKey(), parsed));
         }
         out.sort(java.util.Comparator
                 .comparingDouble((Map.Entry<String, Map<String, Object>> e) ->
