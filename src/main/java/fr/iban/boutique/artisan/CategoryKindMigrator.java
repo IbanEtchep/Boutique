@@ -41,6 +41,23 @@ public final class CategoryKindMigrator {
 
     private CategoryKindMigrator() {}
 
+    /**
+     * Category files the shop does not read, among the folder's paths ({@code list(pid, "")}):
+     * a {@code boutique_categories/} under a themed folder ({@code catalogue/boutique_categories/
+     * kits.yml}) or a sub-folder of it. Only {@code boutique_categories/<id>.yml} at the root is
+     * the catalogue; the editor moves the others back there.
+     */
+    public static List<String> misplaced(List<String> paths) {
+        List<String> out = new ArrayList<>();
+        for (String rel : paths) {
+            if (!YamlFiles.isYaml(rel)) continue;
+            boolean underThemed = rel.contains("/" + DIR + "/");
+            boolean nested = rel.startsWith(DIR + "/") && rel.indexOf('/', DIR.length() + 1) >= 0;
+            if (underThemed || nested) out.add(rel);
+        }
+        return out;
+    }
+
     /** What a run did: categories moved, and those left in the Table (their Document exists). */
     public record Result(List<String> moved, List<String> skipped) {
         public boolean changed() { return !moved.isEmpty(); }

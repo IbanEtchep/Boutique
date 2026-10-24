@@ -200,6 +200,12 @@ public final class BoutiqueModule implements ArtisanModule {
         // The categories' Documents first: what the editor writes and the startup migration
         // makes of an older catalogue.
         List<Map<String, Object>> docs = categoryDocuments(pid);
+        List<String> misplaced = CategoryKindMigrator.misplaced(api.getProject().list(pid, ""));
+        if (!misplaced.isEmpty()) {
+            plugin.getLogger().warning("Catégories ignorées : la boutique ne lit que " + CategoryKindMigrator.DIR
+                    + "/ à la racine du dossier. Ouvrez le dossier dans l'éditeur pour les y ramener, puis Déployer : "
+                    + String.join(", ", misplaced));
+        }
         if (!docs.isEmpty()) {
             repo.loadCategories(docs, defaultLang(pid), settings.wholeShopDiscount());
             return;
