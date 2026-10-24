@@ -226,18 +226,27 @@ public final class BoutiqueModule implements ArtisanModule {
         repo.load(contents::get, files);
     }
 
-    /** One map per {@code boutique_categories/<id>.yaml}, {@code id} its file name. */
+    /**
+     * One map per {@code boutique_categories/<id>.yml} (or {@code .yaml}), {@code id} its file name
+     * without extension; an id under both is read from its {@code .yml}.
+     */
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> categoryDocuments(String pid) {
         List<Map<String, Object>> out = new ArrayList<>();
+        Map<String, String> byId = new java.util.TreeMap<>();
         for (String rel : api.getProject().list(pid, CategoryKindMigrator.DIR)) {
-            if (!rel.endsWith(".yaml") || rel.contains("/")) continue;
+            if (!YamlFiles.isYaml(rel) || rel.contains("/")) continue;
+            String id = YamlFiles.stem(rel);
+            if (!byId.containsKey(id) || rel.endsWith(".yml")) byId.put(id, rel);
+        }
+        for (Map.Entry<String, String> found : byId.entrySet()) {
+            String rel = found.getValue();
             String content = api.getProject().read(pid, CategoryKindMigrator.DIR + "/" + rel);
             if (content == null) continue;
             try {
                 if (new org.yaml.snakeyaml.Yaml().load(content) instanceof Map<?, ?> m) {
                     Map<String, Object> doc = new LinkedHashMap<>((Map<String, Object>) m);
-                    doc.put("id", rel.substring(0, rel.length() - ".yaml".length()));
+                    doc.put("id", found.getKey());
                     out.add(doc);
                 }
             } catch (RuntimeException e) {

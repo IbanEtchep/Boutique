@@ -3,6 +3,7 @@ package fr.iban.boutique.artisan;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,7 +19,7 @@ import java.util.stream.Stream;
 /**
  * Moves the catalogue from the {@code data/categories/} Table (one file per category, edited by
  * the former « Catalogue » screen) to {@code boutique_category} Documents
- * ({@code boutique_categories/<id>.yaml}), before Artisan reads the folder.
+ * ({@code boutique_categories/<id>.yaml}, or {@code .yml}), before Artisan reads the folder.
  *
  * <p>Each category keeps its id, name, icon, discount, articles and any key the shop does not
  * know; its rank in {@code _source.yaml}'s {@code order} becomes {@code order}. A text takes its
@@ -55,7 +56,8 @@ public final class CategoryKindMigrator {
         try (Stream<Path> files = Files.list(table)) {
             rows = files.filter(p -> isYaml(p) && !p.getFileName().toString().startsWith("_")).sorted().toList();
         }
-        Path source = table.resolve("_source.yaml");
+        File sourceFile = YamlFiles.find(table.toFile(), "_source");
+        Path source = sourceFile != null ? sourceFile.toPath() : table.resolve("_source.yaml");
         List<String> order = new ArrayList<>();
         if (Files.isRegularFile(source)) {
             Object parsed = yaml.load(Files.readString(source));
@@ -75,7 +77,7 @@ public final class CategoryKindMigrator {
             Map<String, Object> category = (Map<String, Object>) raw;
             String fileId = row.getFileName().toString().replaceFirst("\\.ya?ml$", "");
             String id = category.get("id") == null ? fileId : String.valueOf(category.get("id"));
-            Path target = documents.resolve(id + ".yaml");
+            Path target = YamlFiles.target(documents.toFile(), id).toPath();
             backup(project, backups, row);
             if (Files.exists(target)) {
                 skipped.add(id);
@@ -156,7 +158,8 @@ public final class CategoryKindMigrator {
 
         static Texts read(Path project, Yaml yaml) throws IOException {
             String defaultLang = "fr";
-            Path manifest = project.resolve("manifest.yaml");
+            File moduleFile = YamlFiles.moduleFile(project.toFile());
+            Path manifest = moduleFile != null ? moduleFile.toPath() : project.resolve("manifest.yaml");
             if (Files.isRegularFile(manifest)
                     && yaml.load(Files.readString(manifest)) instanceof Map<?, ?> m
                     && m.get("default_lang") instanceof String s && !s.isBlank()) {
