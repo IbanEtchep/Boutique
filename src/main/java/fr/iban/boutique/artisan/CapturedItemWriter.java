@@ -25,7 +25,7 @@ import java.util.UUID;
  * édition faite à la main ou par un agent.
  *
  * Forme écrite : les Documents {@code boutique_category} du dossier
- * ({@code boutique_categories/<id>.yml}, ou {@code .yaml}) — {@code name} porte le littéral, aucune clé n'est
+ * ({@code catalogue/<id>.yml}, ou {@code .yaml}) — {@code name} porte le littéral, aucune clé n'est
  * mintée et {@code lang/} n'est pas touché. Un catalogue d'avant ({@code boutique/shop.yaml},
  * {@code data/categories/}) est déjà converti au boot ({@link ShopDataMigrator},
  * {@link CategoryKindMigrator}), il n'a donc pas à être géré ici.

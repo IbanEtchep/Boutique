@@ -109,7 +109,7 @@ public final class BoutiqueModule implements ArtisanModule {
     static final String CATEGORY_KIND = "boutique_category";
 
     /**
-     * The shop's categories are Documents of the folder ({@code boutique_categories/<id>.yaml}):
+     * The shop's categories are Documents of the folder ({@code catalogue/<id>.yml}):
      * Artisan lists and syncs them, the editor edits them with the view this jar serves.
      */
     static DocumentKindDeclaration categoryKind() {
@@ -233,7 +233,7 @@ public final class BoutiqueModule implements ArtisanModule {
     }
 
     /**
-     * One map per {@code boutique_categories/<id>.yml} (or {@code .yaml}), {@code id} its file name
+     * One map per {@code catalogue/<id>.yml} (or {@code .yaml}), {@code id} its file name
      * without extension; an id under both is read from its {@code .yml}.
      */
     @SuppressWarnings("unchecked")

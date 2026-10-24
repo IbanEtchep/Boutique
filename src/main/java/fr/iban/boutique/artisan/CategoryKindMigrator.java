@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 /**
  * Moves the catalogue from the {@code data/categories/} Table (one file per category, edited by
  * the former « Catalogue » screen) to {@code boutique_category} Documents
- * ({@code boutique_categories/<id>.yaml}, or {@code .yml}), before Artisan reads the folder.
+ * ({@code catalogue/<id>.yml}, or {@code .yaml}), before Artisan reads the folder.
  *
  * <p>Each category keeps its id, name, icon, discount, articles and any key the shop does not
  * know; its rank in {@code _source.yaml}'s {@code order} becomes {@code order}. A text takes its
@@ -34,7 +34,9 @@ import java.util.stream.Stream;
  * Document is written.
  */
 public final class CategoryKindMigrator {
-    public static final String DIR = "boutique_categories";
+    public static final String DIR = "catalogue";
+    /** Where categories lived before the catalogue folder (2026-10-24). */
+    static final String FORMER_DIR = "boutique_categories";
     public static final String SCHEMA = "boutique_category/v1";
     static final String TABLE = "data/categories";
     static final String BACKUP = "category-kind-backup";
@@ -43,19 +45,63 @@ public final class CategoryKindMigrator {
 
     /**
      * Category files the shop does not read, among the folder's paths ({@code list(pid, "")}):
-     * a {@code boutique_categories/} under a themed folder ({@code catalogue/boutique_categories/
-     * kits.yml}) or a sub-folder of it. Only {@code boutique_categories/<id>.yml} at the root is
-     * the catalogue; the editor moves the others back there.
+     * a sub-folder of {@code catalogue/}, or a former {@code boutique_categories/} the startup
+     * move could not empty (an id already in {@code catalogue/}). Only {@code catalogue/<id>.yml}
+     * is the catalogue.
      */
     public static List<String> misplaced(List<String> paths) {
         List<String> out = new ArrayList<>();
         for (String rel : paths) {
             if (!YamlFiles.isYaml(rel)) continue;
-            boolean underThemed = rel.contains("/" + DIR + "/");
+            boolean former = rel.startsWith(FORMER_DIR + "/") || rel.contains("/" + FORMER_DIR + "/");
             boolean nested = rel.startsWith(DIR + "/") && rel.indexOf('/', DIR.length() + 1) >= 0;
-            if (underThemed || nested) out.add(rel);
+            if (former || nested) out.add(rel);
         }
         return out;
+    }
+
+    /**
+     * Moves every category file to {@code catalogue/<id>.yml}: those of the former
+     * {@code boutique_categories/} at the root, and those the editor let a draft file under a
+     * themed folder ({@code catalogue/boutique_categories/kits.yaml}, up to three folders
+     * deep). The bytes are kept. An id already in {@code catalogue/} is left where it is,
+     * never overwritten, and named in the result; an emptied {@code boutique_categories/} goes.
+     * Idempotent: nothing to do once moved.
+     */
+    public static Result relocate(Path project) throws IOException {
+        List<Path> sources = new ArrayList<>();
+        try (Stream<Path> walk = Files.walk(project, 5)) {
+            walk.filter(p -> Files.isRegularFile(p) && isYaml(p)
+                            && p.getParent().getFileName().toString().equals(FORMER_DIR)
+                            && !project.relativize(p).toString().startsWith("."))
+                    .sorted()
+                    .forEach(sources::add);
+        }
+        Path catalogue = project.resolve(DIR);
+        List<String> moved = new ArrayList<>();
+        List<String> skipped = new ArrayList<>();
+        for (Path file : sources) {
+            String id = file.getFileName().toString().replaceFirst("\\.ya?ml$", "");
+            String rel = project.relativize(file).toString().replace(File.separatorChar, '/');
+            if (YamlFiles.find(catalogue.toFile(), id) != null) {
+                skipped.add(rel);
+                continue;
+            }
+            Files.createDirectories(catalogue);
+            Files.move(file, catalogue.resolve(id + ".yml"));
+            moved.add(rel);
+            for (Path dir = file.getParent(); !dir.equals(project) && isEmptyDir(dir); dir = dir.getParent()) {
+                Files.delete(dir);
+            }
+        }
+        return new Result(moved, skipped);
+    }
+
+    private static boolean isEmptyDir(Path dir) throws IOException {
+        if (!Files.isDirectory(dir)) return false;
+        try (Stream<Path> left = Files.list(dir)) {
+            return left.findAny().isEmpty();
+        }
     }
 
     /** What a run did: categories moved, and those left in the Table (their Document exists). */

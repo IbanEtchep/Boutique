@@ -92,7 +92,7 @@ class LegacyInstallTest {
         File projectDir = install(parent, migrated);
 
         // Le catalogue exemple ne doit pas concurrencer le catalogue migré.
-        assertFalse(new File(projectDir, "boutique_categories/weapons.yaml").exists(),
+        assertFalse(new File(projectDir, "catalogue/weapons.yaml").exists(),
                 "le catalogue exemple masquerait le catalogue migré");
         assertFalse(new File(projectDir, "data/categories").exists(), "la Table est passée en Documents");
         // …et la conversion a bien eu lieu, dès ce boot.
@@ -126,7 +126,7 @@ class LegacyInstallTest {
     void freshInstallWithoutLegacyConfigServesTheExampleCatalog(@TempDir File parent) throws Exception {
         File projectDir = install(parent, Optional.empty());
 
-        assertTrue(new File(projectDir, "boutique_categories/weapons.yaml").isFile());
+        assertTrue(new File(projectDir, "catalogue/weapons.yaml").isFile());
         ShopRepo repo = loadRepo(projectDir);
         assertEquals(List.of("weapons"), repo.categories().stream()
                 .map(ShopCategory::getId).collect(Collectors.toList()));
@@ -149,7 +149,7 @@ class LegacyInstallTest {
         assertTrue(ShopDataMigrator.migrateIfNeeded(projectDir));
         CategoryKindMigrator.migrate(projectDir.toPath(), parent.toPath());
 
-        assertFalse(new File(projectDir, "boutique_categories/weapons.yaml").exists());
+        assertFalse(new File(projectDir, "catalogue/weapons.yaml").exists());
         assertEquals(List.of("armes"), loadRepo(projectDir).categories().stream()
                 .map(ShopCategory::getId).collect(Collectors.toList()));
     }
@@ -159,7 +159,7 @@ class LegacyInstallTest {
     void anEditedTableIsNeverClobberedByAnOrphanShopYaml(@TempDir File parent) throws Exception {
         File projectDir = new File(parent, "editor");
         Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
-        File weapons = new File(projectDir, "boutique_categories/weapons.yaml");
+        File weapons = new File(projectDir, "catalogue/weapons.yaml");
         Files.writeString(weapons.toPath(), Files.readString(weapons.toPath())
                 .replace("name: Armes", "name: Mes armes à moi"));
         Files.createDirectories(new File(projectDir, "boutique").toPath());

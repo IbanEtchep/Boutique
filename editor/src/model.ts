@@ -7,7 +7,7 @@ import { fieldText, newTextKey } from "@artisan/editor-sdk";
 
 /**
  * A `boutique_category/v1` Document in the editor: one file per category of the shop
- * (`boutique_categories/<id>.yaml` in the module's folder), holding its articles. Names are
+ * (`catalogue/<id>.yml` in the module's folder), holding its articles. Names are
  * text nodes (`{key}`, the host's `LText`), the other fields typed, and what the editor does
  * not know is kept verbatim in `rest` so a round trip loses nothing.
  *
@@ -16,7 +16,7 @@ import { fieldText, newTextKey } from "@artisan/editor-sdk";
  */
 
 export const KIND = "boutique_category";
-export const DIR = "boutique_categories";
+export const DIR = "catalogue";
 export const SCHEMA = "boutique_category/v1";
 /** The module's folder: the only project where categories are read, hence created. */
 export const PROJECT = "boutique_addon";

@@ -25,7 +25,7 @@ export const categoryKind: DocumentKindContribution = {
   // A category's id names it in the menus (`category` of shop_category): typed by hand.
   projects: [PROJECT],
   // The catalogue (SDK 1.9): one entry and one page, off the board, its settings on top.
-  // The categories stay in boutique_categories/ at the folder's root, the only place read.
+  // The categories stay in catalogue/ at the folder's root, the only place read.
   collection: { labels: COLLECTION_LABELS },
   label: LABELS.en,
   labels: LABELS,

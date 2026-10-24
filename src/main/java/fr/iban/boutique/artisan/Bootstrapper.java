@@ -16,12 +16,12 @@ public final class Bootstrapper {
      * trouver. Écarté quand un catalogue legacy est migré : il masquerait le vrai contenu au
      * chargement ({@code ShopRepo} lit les catégories en priorité).
      */
-    static final List<String> EXAMPLE_CATALOG = List.of("boutique_categories/weapons.yaml");
+    static final List<String> EXAMPLE_CATALOG = List.of("catalogue/weapons.yaml");
 
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
             "dialogs/confirm_purchase.yaml",
-            "boutique_categories/weapons.yaml",
+            "catalogue/weapons.yaml",
             "data/shop_settings.yaml",
             // Ref d'une ligne vers le model DÉCLARÉ : le schéma vit dans ce JAR,
             // il n'est jamais recopié sur le disque (ADR yaml-assisted-editing).
