@@ -701,7 +701,7 @@ const Ae = {
     "boutique:items": "boutique:item",
     "boutique:categories": "boutique:category"
   }
-}, je = { ...Ae, sdk: "1.7.0" };
+}, je = { ...Ae, sdk: "1.8.0" };
 export {
   je as default
 };
