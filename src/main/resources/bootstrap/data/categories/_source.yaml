@@ -1,4 +1,0 @@
-name: Catégories
-model: boutique:category
-model_version: 1
-order: [weapons]

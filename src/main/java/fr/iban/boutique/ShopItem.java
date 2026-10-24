@@ -10,12 +10,15 @@ public final class ShopItem {
     private final double price;
     private final int discount;
     private final List<String> lore;
-    /** Actions d'achat en **Action DSL** (le wire du champ `actions`, texte littéral — cf. ADR action-dsl). */
-    private final String actions;
+    /**
+     * Actions d'achat : la chaîne au format du fichier, liste d'étapes keyed (ce que l'éditeur
+     * écrit) ou texte en Action DSL (catalogues d'avant). {@code ModuleActionsApi.run} lit les deux.
+     */
+    private final Object actions;
     private final ShopCategory category;
 
     public ShopItem(String id, String name, Object icon, double price, int discount,
-                     List<String> lore, String actions, ShopCategory category) {
+                     List<String> lore, Object actions, ShopCategory category) {
         this.id = id;
         this.name = name;
         this.icon = icon;
@@ -50,8 +53,15 @@ public final class ShopItem {
         return lore;
     }
 
-    public String getActions() {
+    public Object getActions() {
         return actions;
+    }
+
+    /** Vrai si l'achat fait quelque chose : une chaîne non vide. */
+    public boolean hasActions() {
+        if (actions instanceof String s) return !s.isBlank();
+        if (actions instanceof java.util.Collection<?> c) return !c.isEmpty();
+        return actions instanceof java.util.Map<?, ?> m && !m.isEmpty();
     }
 
     public ShopCategory getCategory() {

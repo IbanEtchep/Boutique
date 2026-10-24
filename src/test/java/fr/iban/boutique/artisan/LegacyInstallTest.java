@@ -4,11 +4,14 @@ import fr.iban.boutique.ShopCategory;
 import fr.iban.boutique.ShopItem;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Bout en bout de l'install legacy — la séquence exacte de {@code ShopPlugin.onEnable} :
  * config.yml MenuAPI → {@link LegacyConfigMigrator} → {@link Bootstrapper} →
- * {@link ShopDataMigrator} → {@link ShopRepo}. Les tests unitaires par étage
+ * {@link ShopDataMigrator} → {@link CategoryKindMigrator} → {@link ShopRepo}. Les tests unitaires par étage
  * passaient tous alors que la chaîne complète était morte : le bootstrap posait
  * le catalogue exemple, ce qui bloquait la conversion (garde `_source.yaml`) ET
  * masquait le legacy au chargement (la Table gagne sur `boutique/shop.yaml`).
@@ -58,17 +61,23 @@ class LegacyInstallTest {
         File projectDir = new File(parent, "editor");
         Bootstrapper.bootstrapIfAbsent(projectDir, migrated);
         ShopDataMigrator.migrateIfNeeded(projectDir);
+        CategoryKindMigrator.migrate(projectDir.toPath(), parent.toPath());
         return projectDir;
     }
 
+    /** What {@code BoutiqueModule.reloadRepo} reads: the {@code boutique_category} Documents. */
+    @SuppressWarnings("unchecked")
     private static ShopRepo loadRepo(File projectDir) {
-        File catDir = new File(projectDir, "data/categories");
-        List<String> rows = Arrays.stream(Optional.ofNullable(catDir.list()).orElse(new String[0]))
-                .filter(n -> n.endsWith(".yaml") && !n.equals("_source.yaml"))
-                .sorted()
-                .collect(Collectors.toList());
+        File catDir = new File(projectDir, CategoryKindMigrator.DIR);
+        List<Map<String, Object>> docs = new ArrayList<>();
+        for (String name : Arrays.stream(Optional.ofNullable(catDir.list()).orElse(new String[0]))
+                .filter(n -> n.endsWith(".yaml")).sorted().collect(Collectors.toList())) {
+            Map<String, Object> doc = new LinkedHashMap<>((Map<String, Object>) new Yaml().load(read(new File(catDir, name))));
+            doc.put("id", name.substring(0, name.length() - ".yaml".length()));
+            docs.add(doc);
+        }
         ShopRepo repo = new ShopRepo();
-        repo.loadFromDataTable(rel -> read(new File(catDir, rel)), rows, Map.of(), 5);
+        repo.loadCategories(docs, "fr", 5);
         return repo;
     }
 
@@ -83,8 +92,9 @@ class LegacyInstallTest {
         File projectDir = install(parent, migrated);
 
         // Le catalogue exemple ne doit pas concurrencer le catalogue migré.
-        assertFalse(new File(projectDir, "data/categories/weapons.yaml").exists(),
+        assertFalse(new File(projectDir, "boutique_categories/weapons.yaml").exists(),
                 "le catalogue exemple masquerait le catalogue migré");
+        assertFalse(new File(projectDir, "data/categories").exists(), "la Table est passée en Documents");
         // …et la conversion a bien eu lieu, dès ce boot.
         assertFalse(new File(projectDir, "boutique/shop.yaml").exists(), "shop.yaml doit être archivé");
         assertTrue(new File(parent, "shop.yaml.migrated").isFile());
@@ -99,6 +109,7 @@ class LegacyInstallTest {
         assertEquals("Épée en diamant", item.getName());
         assertEquals(100.0, item.getPrice());
         assertEquals("run_command \"give {player} diamond_sword 1\" as console", item.getActions());
+        assertTrue(new File(parent, "category-kind-backup/data/categories/armes.yaml").isFile());
         // L'icône reste une ref universelle vers le stack capturé, lui aussi posé.
         assertEquals("item:ci_epee_en_diamant", item.getIcon());
         assertTrue(new File(projectDir, "items/ci_epee_en_diamant.yml").isFile());
@@ -115,7 +126,7 @@ class LegacyInstallTest {
     void freshInstallWithoutLegacyConfigServesTheExampleCatalog(@TempDir File parent) throws Exception {
         File projectDir = install(parent, Optional.empty());
 
-        assertTrue(new File(projectDir, "data/categories/weapons.yaml").isFile());
+        assertTrue(new File(projectDir, "boutique_categories/weapons.yaml").isFile());
         ShopRepo repo = loadRepo(projectDir);
         assertEquals(List.of("weapons"), repo.categories().stream()
                 .map(ShopCategory::getId).collect(Collectors.toList()));
@@ -136,20 +147,21 @@ class LegacyInstallTest {
                 migrated.get("boutique/shop.yaml"));                        // shop.yaml orphelin
 
         assertTrue(ShopDataMigrator.migrateIfNeeded(projectDir));
+        CategoryKindMigrator.migrate(projectDir.toPath(), parent.toPath());
 
-        assertFalse(new File(projectDir, "data/categories/weapons.yaml").exists());
+        assertFalse(new File(projectDir, "boutique_categories/weapons.yaml").exists());
         assertEquals(List.of("armes"), loadRepo(projectDir).categories().stream()
                 .map(ShopCategory::getId).collect(Collectors.toList()));
     }
 
-    /** …mais une Table éditée par l'admin est du contenu : on n'y touche jamais. */
+    /** …mais un catalogue édité par l'admin est du contenu : on n'y touche jamais. */
     @Test
     void anEditedTableIsNeverClobberedByAnOrphanShopYaml(@TempDir File parent) throws Exception {
         File projectDir = new File(parent, "editor");
         Bootstrapper.bootstrapIfAbsent(projectDir, Optional.empty());
-        File weapons = new File(projectDir, "data/categories/weapons.yaml");
+        File weapons = new File(projectDir, "boutique_categories/weapons.yaml");
         Files.writeString(weapons.toPath(), Files.readString(weapons.toPath())
-                .replace("name: \"Armes\"", "name: \"Mes armes à moi\""));
+                .replace("name: Armes", "name: Mes armes à moi"));
         Files.createDirectories(new File(projectDir, "boutique").toPath());
         Files.writeString(new File(projectDir, "boutique/shop.yaml").toPath(),
                 LegacyConfigMigrator.migrate(LEGACY).orElseThrow().get("boutique/shop.yaml"));

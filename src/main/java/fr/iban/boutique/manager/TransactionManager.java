@@ -17,7 +17,7 @@ public class TransactionManager {
     }
 
     public void buy(Player player, ShopItem item, int wholeShopDiscount) {
-        if (item.getActions().isBlank()) {
+        if (!item.hasActions()) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.no-buy-commands")));
             return;
         }
@@ -35,11 +35,11 @@ public class TransactionManager {
                 databaseManager.addTokens(playerId, price);
                 return;
             }
-            // La chaîne Action DSL de l'item (conditions, messages, commandes…)
-            // s'exécute via le moteur d'actions Artisan, main-thread.
-            // Project en portée : les actions d'un article peuvent porter `@clé`,
-            // résolue dans les lang/ du project boutique.
-            plugin.getArtisanApi().getActions().execute(
+            // La chaîne de l'article (conditions, messages, commandes…) s'exécute via le
+            // moteur d'actions Artisan, main-thread : liste keyed écrite par l'éditeur ou
+            // Action DSL d'un catalogue d'avant, `run` lit les deux. Project en portée :
+            // une action peut porter `@clé`, résolue dans les lang/ du dossier boutique.
+            plugin.getArtisanApi().getActions().run(
                     player, item.getActions(), java.util.Map.of(), ShopPlugin.PROJECT_ID);
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.buy-success")));
             databaseManager.addPurchaseHistory(playerId, item);

@@ -12,19 +12,16 @@ import java.util.stream.Stream;
 /** Écrit le contenu par défaut dans le dossier du module s'il n'en a pas encore. */
 public final class Bootstrapper {
     /**
-     * Catalogue EXEMPLE (ADR composable-data-models §8) — la Table déclarée
-     * qu'une install vierge doit trouver. Écarté quand un catalogue legacy est
-     * migré : il masquerait le vrai contenu au chargement ({@code ShopRepo}
-     * lit la Table en priorité) et bloquerait sa conversion (garde
-     * {@code _source.yaml} de {@link ShopDataMigrator}).
+     * Catalogue EXEMPLE : une catégorie {@code boutique_category} qu'une install vierge doit
+     * trouver. Écarté quand un catalogue legacy est migré : il masquerait le vrai contenu au
+     * chargement ({@code ShopRepo} lit les catégories en priorité).
      */
-    static final List<String> EXAMPLE_CATALOG = List.of(
-            "data/categories/_source.yaml", "data/categories/weapons.yaml");
+    static final List<String> EXAMPLE_CATALOG = List.of("boutique_categories/weapons.yaml");
 
     private static final List<String> RESOURCES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
             "dialogs/confirm_purchase.yaml",
-            "data/categories/_source.yaml", "data/categories/weapons.yaml",
+            "boutique_categories/weapons.yaml",
             "data/shop_settings.yaml",
             // Ref d'une ligne vers le model DÉCLARÉ : le schéma vit dans ce JAR,
             // il n'est jamais recopié sur le disque (ADR yaml-assisted-editing).

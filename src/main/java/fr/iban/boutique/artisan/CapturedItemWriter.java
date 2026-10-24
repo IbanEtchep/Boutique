@@ -24,11 +24,11 @@ import java.util.UUID;
  * lui-même, et le scan disque d'Artisan recharge à chaud — exactement comme une
  * édition faite à la main ou par un agent.
  *
- * Forme écrite : la **Table déclarée** `data/categories/` en fichiers nus (ADR
- * `bare-data-files`) — `name` porte le littéral, aucune clé n'est mintée et
- * `lang/` n'est pas touché. Un catalogue legacy `boutique/shop.yaml` est déjà
- * converti au boot par {@link ShopDataMigrator}, donc il n'a pas à être géré
- * ici : sans Table, on refuse plutôt que d'inventer un format.
+ * Forme écrite : les Documents {@code boutique_category} du dossier
+ * ({@code boutique_categories/<id>.yaml}) — {@code name} porte le littéral, aucune clé n'est
+ * mintée et {@code lang/} n'est pas touché. Un catalogue d'avant ({@code boutique/shop.yaml},
+ * {@code data/categories/}) est déjà converti au boot ({@link ShopDataMigrator},
+ * {@link CategoryKindMigrator}), il n'a donc pas à être géré ici.
  */
 public final class CapturedItemWriter {
 
@@ -47,51 +47,45 @@ public final class CapturedItemWriter {
             String category,
             String stackYaml,
             Map<String, Object> display) {
-        File catDir = new File(projectDir, "data/categories");
-        File metaFile = new File(catDir, "_source.yaml");
-        if (!metaFile.isFile()) {
-            return Result.failed("aucun catalogue (data/categories/_source.yaml) dans " + projectDir.getName());
+        File catDir = new File(projectDir, CategoryKindMigrator.DIR);
+        // Pas de project = rien à muter : on le dit, on n'en invente pas un.
+        if (!new File(projectDir, "manifest.yaml").isFile()) {
+            return Result.failed("aucun project Boutique dans " + projectDir.getPath());
         }
         try {
             Yaml yaml = plainYaml();
-            Map<String, Object> meta = load(yaml, metaFile);
-            List<String> order = new ArrayList<>();
-            Object rawOrder = meta.get("order");
-            if (rawOrder instanceof List<?> l) for (Object o : l) order.add(String.valueOf(o));
-
             String ciId = writeCapturedItem(projectDir, yaml, stackYaml, display, itemId);
 
-            // La ligne cible : par id, puis par nom, sinon la première du
-            // catalogue quand l'admin n'a pas précisé de catégorie.
+            // La catégorie cible : par id, puis par nom, sinon la première de la
+            // boutique quand l'admin n'a pas précisé de catégorie.
             String wanted = category == null ? null : category.trim().toLowerCase(Locale.ROOT);
+            List<Map.Entry<String, Map<String, Object>>> categories = categories(yaml, catDir);
             String rowKey = null;
             Map<String, Object> row = null;
-            for (String key : order) {
-                Map<String, Object> parsed = load(yaml, new File(catDir, key + ".yaml"));
-                if (parsed.isEmpty()) continue;
-                String id = String.valueOf(parsed.getOrDefault("id", key)).toLowerCase(Locale.ROOT);
-                String name = String.valueOf(parsed.getOrDefault("name", "")).toLowerCase(Locale.ROOT);
-                if (wanted == null || id.equals(wanted) || name.equals(wanted)) {
-                    rowKey = key;
+            for (var entry : categories) {
+                Map<String, Object> parsed = entry.getValue();
+                String id = entry.getKey().toLowerCase(Locale.ROOT);
+                if (wanted == null || id.equals(wanted) || names(parsed.get("name")).contains(wanted)) {
+                    rowKey = entry.getKey();
                     row = parsed;
                     break;
                 }
             }
             if (row == null) {
-                // Catégorie inconnue : on la crée. Le nom est le littéral tel que
-                // tapé — pas de clé de traduction (fichiers data nus).
+                // Catégorie inconnue : on la crée, après les autres. Le nom est le
+                // littéral tel que tapé — pas de clé de traduction.
                 rowKey = slug(wanted == null ? "divers" : wanted);
+                int last = 0;
+                for (var entry : categories) {
+                    if (entry.getValue().get("order") instanceof Number n) last = Math.max(last, n.intValue());
+                }
                 row = new LinkedHashMap<>();
-                row.put("id", rowKey);
+                row.put("schema", CategoryKindMigrator.SCHEMA);
                 row.put("name", category == null || category.isBlank() ? "Divers" : category.trim());
                 row.put("icon", "CHEST");
                 row.put("discount", 0);
+                row.put("order", last + 1);
                 row.put("items", new ArrayList<Map<String, Object>>());
-                if (!order.contains(rowKey)) {
-                    order.add(rowKey);
-                    meta.put("order", order);
-                    Files.writeString(metaFile.toPath(), yaml.dump(meta));
-                }
             }
 
             @SuppressWarnings("unchecked")
@@ -115,12 +109,10 @@ public final class CapturedItemWriter {
                 entry.put("name", displayName);
                 entry.put("icon", "item:" + ciId);
                 entry.put("price", price);
-                entry.put("discount", 0);
-
-                entry.put("actions", "");
                 items.add(entry);
             }
             row.put("items", items);
+            Files.createDirectories(catDir.toPath());
             Files.writeString(new File(catDir, rowKey + ".yaml").toPath(), yaml.dump(row));
             return Result.written(ciId);
         } catch (IOException | RuntimeException e) {
@@ -162,6 +154,33 @@ public final class CapturedItemWriter {
         Files.createDirectories(stateFile.getParentFile().toPath());
         Files.writeString(stateFile.toPath(), yaml.dump(state));
         return ciId;
+    }
+
+    /** The folder's categories, file name → content, in the shop's order (`order`, then id). */
+    private static List<Map.Entry<String, Map<String, Object>>> categories(Yaml yaml, File dir) {
+        List<Map.Entry<String, Map<String, Object>>> out = new ArrayList<>();
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".yaml") && !name.startsWith("."));
+        if (files == null) return out;
+        for (File file : files) {
+            Map<String, Object> parsed = load(yaml, file);
+            if (!parsed.isEmpty()) out.add(Map.entry(file.getName().replaceFirst("\\.yaml$", ""), parsed));
+        }
+        out.sort(java.util.Comparator
+                .comparingDouble((Map.Entry<String, Map<String, Object>> e) ->
+                        e.getValue().get("order") instanceof Number n ? n.doubleValue() : Double.POSITIVE_INFINITY)
+                .thenComparing(Map.Entry::getKey));
+        return out;
+    }
+
+    /** A category's name in every language, lower-cased: a string, or the values of `{fr: …}`. */
+    private static List<String> names(Object name) {
+        List<String> out = new ArrayList<>();
+        if (name instanceof Map<?, ?> langs) {
+            for (Object v : langs.values()) if (v != null) out.add(v.toString().toLowerCase(Locale.ROOT));
+        } else if (name != null) {
+            out.add(name.toString().toLowerCase(Locale.ROOT));
+        }
+        return out;
     }
 
     private static void copyIfPresent(Map<String, Object> from, Map<String, Object> to, String key, String as) {

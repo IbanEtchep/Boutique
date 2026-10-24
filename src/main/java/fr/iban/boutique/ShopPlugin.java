@@ -156,6 +156,25 @@ public final class ShopPlugin extends JavaPlugin {
             migrations.markDone("catalog-icons");
         }
 
+        // La Table data/categories/ devient des Documents boutique_category
+        // (boutique_categories/<id>.yaml), éditables comme nœuds du canvas. À
+        // chaque démarrage (idempotent) : une catégorie dont le Document existe
+        // déjà reste dans la Table, jamais écrasée.
+        try {
+            fr.iban.boutique.artisan.CategoryKindMigrator.Result moved =
+                    fr.iban.boutique.artisan.CategoryKindMigrator.migrate(projectDir.toPath(), getDataFolder().toPath());
+            if (moved.changed()) {
+                getLogger().info("Catalogue déplacé vers boutique_categories/ : " + String.join(", ", moved.moved())
+                        + " (sauvegarde : category-kind-backup).");
+            }
+            if (!moved.skipped().isEmpty()) {
+                getLogger().warning("Catégories laissées dans data/categories/ (leur Document existe déjà) : "
+                        + String.join(", ", moved.skipped()));
+            }
+        } catch (IOException e) {
+            getLogger().warning("Migration du catalogue vers boutique_categories/ impossible : " + e.getMessage());
+        }
+
         try {
             switch (fr.iban.boutique.artisan.ShopCommandMigrator.migrate(projectDir)) {
                 case REMOVED ->
