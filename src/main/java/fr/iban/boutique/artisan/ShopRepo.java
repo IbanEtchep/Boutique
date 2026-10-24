@@ -104,7 +104,7 @@ public final class ShopRepo {
 
     /**
      * Chargement depuis les Documents {@code boutique_category} du dossier
-     * ({@code boutique_categories/<id>.yaml}, un fichier par catégorie). Un texte y porte
+     * ({@code catalogue/<id>.yml}, un fichier par catégorie). Un texte y porte
      * ses langues (ADR field-local-translations) : une chaîne, ou une map {@code {fr: …, en: …}}
      * dont on prend {@code lang}, sinon la première. Les catégories sont triées par
      * {@code order} (les plus petits d'abord, sans {@code order} après), puis par id.

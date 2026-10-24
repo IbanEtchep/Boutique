@@ -27,9 +27,9 @@ class CapturedItemWriterTest {
 
     private static File seedProject(Path tmp) throws Exception {
         File dir = tmp.resolve("editor").toFile();
-        new File(dir, "boutique_categories").mkdirs();
+        new File(dir, "catalogue").mkdirs();
         Files.writeString(new File(dir, "manifest.yaml").toPath(), "default_lang: fr\n");
-        Files.writeString(new File(dir, "boutique_categories/weapons.yaml").toPath(),
+        Files.writeString(new File(dir, "catalogue/weapons.yaml").toPath(),
                 "schema: boutique_category/v1\nname: Armes\nicon: CHEST\ndiscount: 0\norder: 1\nitems: []\n");
         return dir;
     }
@@ -47,7 +47,7 @@ class CapturedItemWriterTest {
                 dir, "epee_roi", 250, "Armes", "item:\n  type: DIAMOND_SWORD\n", DISPLAY);
 
         assertTrue(res.ok(), res.error());
-        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "catalogue/weapons.yaml"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) row.get("items");
         assertEquals(1, items.size());
         assertEquals("epee_roi", items.get(0).get("id"));
@@ -92,7 +92,7 @@ class CapturedItemWriterTest {
                 dir, "epee_roi", 999, "Armes", "item: v2\n", DISPLAY);
 
         assertTrue(res.ok());
-        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "catalogue/weapons.yaml"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) row.get("items");
         assertEquals(1, items.size(), "l'article doit être mis à jour, pas dupliqué");
         assertEquals(999, items.get(0).get("price"));
@@ -107,7 +107,7 @@ class CapturedItemWriterTest {
                 dir, "potion", 10, "Consommables", "item: p\n", Map.of("material", "POTION"));
 
         assertTrue(res.ok());
-        File rowFile = new File(dir, "boutique_categories/consommables.yaml");
+        File rowFile = new File(dir, "catalogue/consommables.yaml");
         assertTrue(rowFile.isFile(), "la catégorie doit être créée");
         Map<String, Object> row = readYaml(rowFile);
         assertEquals("boutique_category/v1", row.get("schema"));
@@ -124,7 +124,7 @@ class CapturedItemWriterTest {
                 dir, "truc", 5, null, "item: t\n", Map.of("material", "STONE"));
 
         assertTrue(res.ok());
-        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "catalogue/weapons.yaml"));
         assertEquals(1, ((List<?>) row.get("items")).size());
     }
 
@@ -134,10 +134,10 @@ class CapturedItemWriterTest {
 
         CapturedItemWriter.addItem(dir, "a", 1, "weapons", "item: a\n", Map.of());
 
-        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "catalogue/weapons.yaml"));
         assertEquals(1, ((List<?>) row.get("items")).size(), "matché par id");
         // Aucune catégorie parasite n'a été créée.
-        assertFalse(new File(dir, "boutique_categories/weapons_1.yaml").exists());
+        assertFalse(new File(dir, "catalogue/weapons_1.yaml").exists());
     }
 
     @Test

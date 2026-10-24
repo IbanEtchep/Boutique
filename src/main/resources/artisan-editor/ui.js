@@ -81,7 +81,7 @@ function L(e) {
     return o ? i.replace(/\{\{(\w+)\}\}/g, (a, r) => String(o[r] ?? a)) : i;
   };
 }
-const w = "boutique_category", E = "boutique_categories", D = "boutique_category/v1", le = "boutique_addon";
+const w = "boutique_category", E = "catalogue", D = "boutique_category/v1", le = "boutique_addon";
 function I(e) {
   return e && typeof e == "object" && !Array.isArray(e) ? { ...e } : {};
 }
@@ -631,8 +631,8 @@ const Ce = {
   // A category's id names it in the menus (`category` of shop_category): typed by hand.
   projects: [le],
   // The catalogue (SDK 1.9): one entry and one page, off the board, its settings on top.
-  // The categories stay in boutique_categories/ at the folder's root, the only place read.
-  collection: { labels: ae, screen: "boutique:settings" },
+  // The categories stay in catalogue/ at the folder's root, the only place read.
+  collection: { labels: ae },
   label: j.en,
   labels: j,
   component: ke,

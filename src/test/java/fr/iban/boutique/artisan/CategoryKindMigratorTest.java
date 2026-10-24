@@ -55,13 +55,54 @@ class CategoryKindMigratorTest {
     @Test
     void namesTheCategoryFilesTheShopDoesNotRead() {
         assertEquals(
-                List.of("catalogue/boutique_categories/keys.yml", "boutique_categories/old/kits.yaml"),
+                List.of("boutique_categories/keys.yml", "catalogue/old/kits.yaml",
+                        "divers/boutique_categories/packs.yml"),
                 CategoryKindMigrator.misplaced(List.of(
-                        "boutique_categories/divers.yml",
-                        "catalogue/boutique_categories/keys.yml",
-                        "boutique_categories/old/kits.yaml",
-                        "catalogue/menus/shop_main.yml",
-                        "catalogue/boutique_categories/notes.txt")));
+                        "catalogue/divers.yml",
+                        "boutique_categories/keys.yml",
+                        "catalogue/old/kits.yaml",
+                        "divers/boutique_categories/packs.yml",
+                        "divers/menus/shop_main.yml",
+                        "catalogue/notes.txt")));
+    }
+
+    @Test
+    void categoriesMoveToTheCatalogueFolderWithTheirBytes(@TempDir Path root) throws Exception {
+        Path project = root.resolve("boutique_addon");
+        Files.createDirectories(project.resolve("boutique_categories"));
+        Files.createDirectories(project.resolve("catalogue/boutique_categories"));
+        Files.createDirectories(project.resolve("menus"));
+        Files.writeString(project.resolve("boutique_categories/divers.yml"), "name: Divers\n");
+        Files.writeString(project.resolve("catalogue/boutique_categories/les_cles.yaml"), "name: Clés\n");
+        Files.writeString(project.resolve("menus/shop_main.yml"), "title: Boutique\n");
+
+        CategoryKindMigrator.Result result = CategoryKindMigrator.relocate(project);
+
+        assertEquals(List.of("boutique_categories/divers.yml", "catalogue/boutique_categories/les_cles.yaml"),
+                result.moved());
+        assertEquals("name: Divers\n", Files.readString(project.resolve("catalogue/divers.yml")));
+        assertEquals("name: Clés\n", Files.readString(project.resolve("catalogue/les_cles.yml")));
+        assertFalse(Files.exists(project.resolve("boutique_categories")), "the emptied former folder goes");
+        assertFalse(Files.exists(project.resolve("catalogue/boutique_categories")));
+        assertEquals("title: Boutique\n", Files.readString(project.resolve("menus/shop_main.yml")));
+        assertFalse(CategoryKindMigrator.relocate(project).changed(), "a second run does nothing");
+    }
+
+    @Test
+    void anIdAlreadyInTheCatalogueIsNeverOverwritten(@TempDir Path root) throws Exception {
+        Path project = root.resolve("boutique_addon");
+        Files.createDirectories(project.resolve("boutique_categories"));
+        Files.createDirectories(project.resolve("catalogue/boutique_categories"));
+        Files.writeString(project.resolve("boutique_categories/divers.yml"), "name: Racine\n");
+        Files.writeString(project.resolve("catalogue/boutique_categories/divers.yaml"), "name: Rangée\n");
+
+        CategoryKindMigrator.Result result = CategoryKindMigrator.relocate(project);
+
+        assertEquals(List.of("boutique_categories/divers.yml"), result.moved());
+        assertEquals(List.of("catalogue/boutique_categories/divers.yaml"), result.skipped());
+        assertEquals("name: Racine\n", Files.readString(project.resolve("catalogue/divers.yml")));
+        assertEquals("name: Rangée\n",
+                Files.readString(project.resolve("catalogue/boutique_categories/divers.yaml")));
     }
 
     @Test
@@ -75,7 +116,7 @@ class CategoryKindMigratorTest {
         assertTrue(result.skipped().isEmpty());
         assertFalse(Files.exists(project.resolve("data/categories")), "the Table is gone once moved");
 
-        Map<String, Object> weapons = read(project.resolve("boutique_categories/weapons.yaml"));
+        Map<String, Object> weapons = read(project.resolve("catalogue/weapons.yaml"));
         assertEquals("boutique_category/v1", weapons.get("schema"));
         assertNull(weapons.get("id"), "the file name is the id");
         assertEquals("Armes", weapons.get("name"));
@@ -93,7 +134,7 @@ class CategoryKindMigratorTest {
         assertEquals(5, items.get(1).get("discount"));
 
         // A name that was a key of the default language takes its text.
-        Map<String, Object> tools = read(project.resolve("boutique_categories/tools.yaml"));
+        Map<String, Object> tools = read(project.resolve("catalogue/tools.yaml"));
         assertEquals("Outils", tools.get("name"));
         assertEquals(1, tools.get("order"));
 
@@ -115,7 +156,7 @@ class CategoryKindMigratorTest {
 
         CategoryKindMigrator.migrate(project, root);
 
-        Map<String, Object> weapons = read(project.resolve("boutique_categories/weapons.yaml"));
+        Map<String, Object> weapons = read(project.resolve("catalogue/weapons.yaml"));
         assertEquals(Map.of("fr", "Armes", "en", "Weapons"), weapons.get("name"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) weapons.get("items");
         assertEquals(Map.of("fr", "Épée", "en", "Sword"), items.get(0).get("name"));
@@ -123,21 +164,21 @@ class CategoryKindMigratorTest {
         Map<String, Object> icon = (Map<String, Object>) weapons.get("icon");
         assertEquals(Map.of("fr", List.of("Tranchant", "Rapide"), "en", List.of("Tranchant", "Fast")), icon.get("lore"));
         assertEquals(Map.of("fr", "Outils", "en", "Tools"),
-                read(project.resolve("boutique_categories/tools.yaml")).get("name"));
+                read(project.resolve("catalogue/tools.yaml")).get("name"));
     }
 
     @Test
     void anExistingDocumentIsNeverOverwritten(@TempDir Path root) throws Exception {
         Path project = seed(root);
-        Files.createDirectories(project.resolve("boutique_categories"));
+        Files.createDirectories(project.resolve("catalogue"));
         String mine = "schema: boutique_category/v1\nname: Mes armes\nitems: []\n";
-        Files.writeString(project.resolve("boutique_categories/weapons.yaml"), mine);
+        Files.writeString(project.resolve("catalogue/weapons.yaml"), mine);
 
         CategoryKindMigrator.Result result = CategoryKindMigrator.migrate(project, root);
 
         assertEquals(List.of("tools"), result.moved());
         assertEquals(List.of("weapons"), result.skipped());
-        assertEquals(mine, Files.readString(project.resolve("boutique_categories/weapons.yaml")));
+        assertEquals(mine, Files.readString(project.resolve("catalogue/weapons.yaml")));
         // The row stays where it was, its Table with it.
         assertTrue(Files.isRegularFile(project.resolve("data/categories/weapons.yaml")));
         assertTrue(Files.isRegularFile(project.resolve("data/categories/_source.yaml")));
@@ -147,12 +188,12 @@ class CategoryKindMigratorTest {
     void aSecondRunDoesNothing(@TempDir Path root) throws Exception {
         Path project = seed(root);
         CategoryKindMigrator.migrate(project, root);
-        String after = Files.readString(project.resolve("boutique_categories/weapons.yaml"));
+        String after = Files.readString(project.resolve("catalogue/weapons.yaml"));
 
         CategoryKindMigrator.Result again = CategoryKindMigrator.migrate(project, root);
 
         assertFalse(again.changed());
-        assertEquals(after, Files.readString(project.resolve("boutique_categories/weapons.yaml")));
+        assertEquals(after, Files.readString(project.resolve("catalogue/weapons.yaml")));
     }
 
     @Test
@@ -162,8 +203,8 @@ class CategoryKindMigratorTest {
 
         ShopRepo repo = new ShopRepo();
         repo.loadCategories(List.of(
-                withId(read(project.resolve("boutique_categories/weapons.yaml")), "weapons"),
-                withId(read(project.resolve("boutique_categories/tools.yaml")), "tools")), "fr", 0);
+                withId(read(project.resolve("catalogue/weapons.yaml")), "weapons"),
+                withId(read(project.resolve("catalogue/tools.yaml")), "tools")), "fr", 0);
 
         assertEquals(List.of("tools", "weapons"), repo.categories().stream().map(c -> c.getId()).toList());
         var sword = repo.findItem("sword").orElseThrow();

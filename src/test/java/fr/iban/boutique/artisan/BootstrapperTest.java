@@ -17,7 +17,7 @@ class BootstrapperTest {
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
             "dialogs/confirm_purchase.yaml",
             // The catalogue: one boutique_category Document per category.
-            "boutique_categories/weapons.yaml",
+            "catalogue/weapons.yaml",
             "data/shop_settings.yaml",
             "lang/fr.yaml");
 

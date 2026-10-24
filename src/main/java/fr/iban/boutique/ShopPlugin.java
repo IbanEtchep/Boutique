@@ -156,15 +156,32 @@ public final class ShopPlugin extends JavaPlugin {
             migrations.markDone("catalog-icons");
         }
 
+        // Les catégories vivent dans catalogue/<id>.yml (2026-10-24) : celles de
+        // l'ancien boutique_categories/, et celles qu'un brouillon a rangées dans
+        // un dossier thématique (catalogue/boutique_categories/), y sont déplacées.
+        try {
+            fr.iban.boutique.artisan.CategoryKindMigrator.Result relocated =
+                    fr.iban.boutique.artisan.CategoryKindMigrator.relocate(projectDir.toPath());
+            if (relocated.changed()) {
+                getLogger().info("Catégories déplacées vers catalogue/ : " + String.join(", ", relocated.moved()));
+            }
+            if (!relocated.skipped().isEmpty()) {
+                getLogger().warning("Catégories laissées en place (même id déjà dans catalogue/) : "
+                        + String.join(", ", relocated.skipped()));
+            }
+        } catch (IOException e) {
+            getLogger().warning("Déplacement des catégories vers catalogue/ impossible : " + e.getMessage());
+        }
+
         // La Table data/categories/ devient des Documents boutique_category
-        // (boutique_categories/<id>.yaml), éditables comme nœuds du canvas. À
+        // (catalogue/<id>.yml), éditables dans le Catalogue de l'éditeur. À
         // chaque démarrage (idempotent) : une catégorie dont le Document existe
         // déjà reste dans la Table, jamais écrasée.
         try {
             fr.iban.boutique.artisan.CategoryKindMigrator.Result moved =
                     fr.iban.boutique.artisan.CategoryKindMigrator.migrate(projectDir.toPath(), getDataFolder().toPath());
             if (moved.changed()) {
-                getLogger().info("Catalogue déplacé vers boutique_categories/ : " + String.join(", ", moved.moved())
+                getLogger().info("Catalogue déplacé vers catalogue/ : " + String.join(", ", moved.moved())
                         + " (sauvegarde : category-kind-backup).");
             }
             if (!moved.skipped().isEmpty()) {
@@ -172,7 +189,7 @@ public final class ShopPlugin extends JavaPlugin {
                         + String.join(", ", moved.skipped()));
             }
         } catch (IOException e) {
-            getLogger().warning("Migration du catalogue vers boutique_categories/ impossible : " + e.getMessage());
+            getLogger().warning("Migration du catalogue vers catalogue/ impossible : " + e.getMessage());
         }
 
         try {
