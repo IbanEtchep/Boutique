@@ -16,8 +16,8 @@ class BootstrapperTest {
     private static final List<String> EXPECTED_FILES = List.of(
             "manifest.yaml", "menus/shop_main.yaml", "menus/shop_category.yaml",
             "dialogs/confirm_purchase.yaml",
-            // Declared-model catalog (ADR composable-data-models §8).
-            "data/categories/_source.yaml", "data/categories/weapons.yaml",
+            // The catalogue: one boutique_category Document per category.
+            "boutique_categories/weapons.yaml",
             "data/shop_settings.yaml",
             "lang/fr.yaml");
 

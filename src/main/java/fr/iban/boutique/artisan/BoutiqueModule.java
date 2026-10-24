@@ -5,6 +5,8 @@ import net.artisanmc.modules.api.*;
 import net.artisanmc.modules.api.action.*;
 import net.artisanmc.modules.api.command.*;
 import net.artisanmc.modules.api.datasource.*;
+import net.artisanmc.modules.api.document.DocumentKindDeclaration;
+import net.artisanmc.modules.api.editor.EditorBundleDeclaration;
 import net.artisanmc.modules.api.model.*;
 import net.artisanmc.modules.api.playercommand.PlayerCommandDeclaration;
 import net.artisanmc.modules.api.template.TemplateDeclaration;
@@ -38,8 +40,11 @@ public final class BoutiqueModule implements ArtisanModule {
         api.getModels().declare(ShopModels.shopSettings());
         // Config screens (ADR module-config-screens): sidebar entries whose
         // core-generated form edits these tables live over the WS relay.
-        api.getScreens().declare("boutique:catalog", "Catalogue", "data/categories", ShopPlugin.PROJECT_ID);
+        // The catalogue is the folder's `boutique_category` Documents (one per category), edited
+        // on the board like menus; the settings stay a screen, opened in the folder on its draft.
         api.getScreens().declare("boutique:settings", "Réglages", "data/shop_settings", ShopPlugin.PROJECT_ID);
+        registerCategoryKind(api);
+        registerEditorBundle(api);
         // Le catalogue se charge au onReload() qu'Artisan appelle au tick suivant,
         // une fois le dossier du module lu : rien ne le consulte avant.
         // Both sources are STATIC: a stable, enumerable key-set (categories/items
@@ -97,6 +102,39 @@ public final class BoutiqueModule implements ArtisanModule {
     }
 
     static final int SYSTEM_MENUS_VERSION = 1;
+
+    /** Built by {@code editor/} ({@code npm run build}); the SDK version its build prints. */
+    static final String EDITOR_BUNDLE = "artisan-editor/ui.js";
+    static final String EDITOR_SDK = "1.8.0";
+    static final String CATEGORY_KIND = "boutique_category";
+
+    /**
+     * The shop's categories are Documents of the folder ({@code boutique_categories/<id>.yaml}):
+     * Artisan lists and syncs them, the editor edits them with the view this jar serves.
+     */
+    static DocumentKindDeclaration categoryKind() {
+        return new DocumentKindDeclaration(CATEGORY_KIND, CategoryKindMigrator.DIR,
+                List.of(CategoryKindMigrator.SCHEMA), null);
+    }
+
+    private void registerCategoryKind(ArtisanAPI api) {
+        try {
+            api.getDocumentKinds().register(categoryKind());
+        } catch (IllegalStateException e) {
+            plugin.getLogger().warning("Le kind boutique_category n'a pas pu être déclaré : " + e.getMessage());
+        }
+    }
+
+    /** Hands the editor view (the categories' form and board node) to Artisan, which serves it. */
+    private void registerEditorBundle(ArtisanAPI api) {
+        try {
+            api.getEditorBundles().register(EditorBundleDeclaration.fromResource(
+                    BoutiqueModule.class.getClassLoader(), EDITOR_BUNDLE, EDITOR_SDK));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "La vue Boutique de l'éditeur n'est pas disponible", e);
+        }
+    }
+
     static final List<String> SYSTEM_MENU_FILES = List.of(
             "menus/shop_main.yaml", "menus/shop_category.yaml", "dialogs/confirm_purchase.yaml");
 
@@ -158,14 +196,20 @@ public final class BoutiqueModule implements ArtisanModule {
         // Reading every project made the first one with a data/categories win,
         // so another module's table could replace the catalog.
         String pid = ShopPlugin.PROJECT_ID;
-        // Declared-model Table first (ADR composable-data-models §8): the
-        // migrated/bootstrapped format. Legacy boutique/shop.yaml stays as the
-        // transition fallback for a not-yet-migrated folder.
+        this.settings = ShopSettings.parse(api.getProject().read(pid, "data/shop_settings.yaml"));
+        // The categories' Documents first: what the editor writes and the startup migration
+        // makes of an older catalogue.
+        List<Map<String, Object>> docs = categoryDocuments(pid);
+        if (!docs.isEmpty()) {
+            repo.loadCategories(docs, defaultLang(pid), settings.wholeShopDiscount());
+            return;
+        }
+        // The former declared-model Table (ADR composable-data-models §8), then the legacy
+        // boutique/shop.yaml: still read for a folder the migration could not convert.
         List<String> rows = api.getProject().list(pid, "data/categories").stream()
                 .filter(rel -> rel.endsWith(".yaml") && !rel.equals("_source.yaml"))
                 .collect(Collectors.toList());
         if (!rows.isEmpty()) {
-            this.settings = ShopSettings.parse(api.getProject().read(pid, "data/shop_settings.yaml"));
             repo.loadFromDataTable(
                     rel -> api.getProject().read(pid, "data/categories/" + rel),
                     rows,
@@ -182,17 +226,42 @@ public final class BoutiqueModule implements ArtisanModule {
         repo.load(contents::get, files);
     }
 
-    /** Default-lang translations of the project (mono-lang runtime resolution).
-     *  The file is a YAML tree — `LangFlattener` folds it back to dotted keys. */
-    private Map<String, String> readLangMap(String pid) {
-        String lang = "fr";
+    /** One map per {@code boutique_categories/<id>.yaml}, {@code id} its file name. */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> categoryDocuments(String pid) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (String rel : api.getProject().list(pid, CategoryKindMigrator.DIR)) {
+            if (!rel.endsWith(".yaml") || rel.contains("/")) continue;
+            String content = api.getProject().read(pid, CategoryKindMigrator.DIR + "/" + rel);
+            if (content == null) continue;
+            try {
+                if (new org.yaml.snakeyaml.Yaml().load(content) instanceof Map<?, ?> m) {
+                    Map<String, Object> doc = new LinkedHashMap<>((Map<String, Object>) m);
+                    doc.put("id", rel.substring(0, rel.length() - ".yaml".length()));
+                    out.add(doc);
+                }
+            } catch (RuntimeException e) {
+                plugin.getLogger().warning("Catégorie illisible, ignorée : " + CategoryKindMigrator.DIR + "/" + rel
+                        + " (" + e.getMessage() + ")");
+            }
+        }
+        return out;
+    }
+
+    /** The folder's default language ({@code default_lang} of its manifest), {@code fr} without one. */
+    private String defaultLang(String pid) {
         String manifest = api.getProject().read(pid, "manifest.yaml");
         if (manifest != null) {
             Object parsed = new org.yaml.snakeyaml.Yaml().load(manifest);
-            if (parsed instanceof Map<?, ?> m && m.get("default_lang") instanceof String s && !s.isBlank()) {
-                lang = s;
-            }
+            if (parsed instanceof Map<?, ?> m && m.get("default_lang") instanceof String s && !s.isBlank()) return s;
         }
+        return "fr";
+    }
+
+    /** Default-lang translations of the project (mono-lang runtime resolution).
+     *  The file is a YAML tree — `LangFlattener` folds it back to dotted keys. */
+    private Map<String, String> readLangMap(String pid) {
+        String lang = defaultLang(pid);
         String content = api.getProject().read(pid, "lang/" + lang + ".yaml");
         if (content == null) return Map.of();
         return LangFlattener.flatten(new org.yaml.snakeyaml.Yaml().load(content));

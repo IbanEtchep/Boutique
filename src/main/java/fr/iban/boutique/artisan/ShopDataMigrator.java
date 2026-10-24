@@ -43,15 +43,17 @@ public final class ShopDataMigrator {
     public static boolean migrateIfNeeded(File projectDir, File archiveDir) {
         File shopYaml = new File(projectDir, "boutique/shop.yaml");
         if (!shopYaml.isFile()) return false;
-        if (sourceMetaFile(projectDir).exists()) {
-            // Une Table existe déjà. L'exemple bundlé INTACT n'est pas du
+        boolean table = sourceMetaFile(projectDir).exists();
+        if (table || hasDocuments(projectDir)) {
+            // Un catalogue existe déjà. L'exemple bundlé INTACT n'est pas du
             // contenu — il cède la place (rattrapage des installs bootstrappées
             // avant que le catalogue exemple ne soit écarté en mode migration).
-            // Une Table éditée, elle, est la vérité : on n'y touche pas.
-            if (!isUntouchedExampleCatalog(projectDir)) {
+            // Un catalogue édité, lui, est la vérité : on n'y touche pas.
+            if (table || !isUntouchedExampleCatalog(projectDir)) {
                 System.err.println("[Boutique] boutique/shop.yaml en attente de conversion, mais "
-                        + "data/categories/ contient déjà un catalogue — conversion ignorée. "
-                        + "Vider data/categories/ pour forcer la reprise du legacy.");
+                        + "le project contient déjà un catalogue — conversion ignorée. "
+                        + "Vider data/categories/ et " + CategoryKindMigrator.DIR
+                        + "/ pour forcer la reprise du legacy.");
                 return false;
             }
             deleteExampleCatalog(projectDir);
@@ -291,13 +293,19 @@ public final class ShopDataMigrator {
     }
 
     /**
-     * La Table est-elle exactement le catalogue exemple bundlé, octet pour
+     * Les Documents de catégorie sont-ils exactement le catalogue exemple bundlé, octet pour
      * octet ? Comparaison au contenu du JAR plutôt qu'à une heuristique de nom :
      * une catégorie ajoutée, renommée ou retouchée fait échouer la comparaison
      * et protège le contenu de l'admin.
      */
+    private static boolean hasDocuments(File projectDir) {
+        String[] present = new File(projectDir, CategoryKindMigrator.DIR)
+                .list((d, n) -> n.endsWith(".yaml") || n.endsWith(".yml"));
+        return present != null && present.length > 0;
+    }
+
     private static boolean isUntouchedExampleCatalog(File projectDir) {
-        File catDir = new File(projectDir, "data/categories");
+        File catDir = new File(projectDir, CategoryKindMigrator.DIR);
         String[] present = catDir.list((d, n) -> n.endsWith(".yaml") || n.endsWith(".yml"));
         if (present == null) return false;
         List<String> expected = new ArrayList<>();

@@ -27,12 +27,10 @@ class CapturedItemWriterTest {
 
     private static File seedProject(Path tmp) throws Exception {
         File dir = tmp.resolve("editor").toFile();
-        new File(dir, "data/categories").mkdirs();
+        new File(dir, "boutique_categories").mkdirs();
         Files.writeString(new File(dir, "manifest.yaml").toPath(), "default_lang: fr\n");
-        Files.writeString(new File(dir, "data/categories/_source.yaml").toPath(),
-                "order:\n- weapons\n");
-        Files.writeString(new File(dir, "data/categories/weapons.yaml").toPath(),
-                "id: weapons\nname: Armes\nicon: CHEST\ndiscount: 0\nitems: []\n");
+        Files.writeString(new File(dir, "boutique_categories/weapons.yaml").toPath(),
+                "schema: boutique_category/v1\nname: Armes\nicon: CHEST\ndiscount: 0\norder: 1\nitems: []\n");
         return dir;
     }
 
@@ -49,10 +47,13 @@ class CapturedItemWriterTest {
                 dir, "epee_roi", 250, "Armes", "item:\n  type: DIAMOND_SWORD\n", DISPLAY);
 
         assertTrue(res.ok(), res.error());
-        Map<String, Object> row = readYaml(new File(dir, "data/categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) row.get("items");
         assertEquals(1, items.size());
         assertEquals("epee_roi", items.get(0).get("id"));
+        // Pas de remise ni d'actions inventées : l'admin les pose dans l'éditeur.
+        assertFalse(items.get(0).containsKey("discount"));
+        assertFalse(items.get(0).containsKey("actions"));
         assertEquals(250, items.get(0).get("price"));
         assertEquals("Épée du roi", items.get(0).get("name"));
         // L'icône pointe vers l'item capturé, pas vers un material.
@@ -91,7 +92,7 @@ class CapturedItemWriterTest {
                 dir, "epee_roi", 999, "Armes", "item: v2\n", DISPLAY);
 
         assertTrue(res.ok());
-        Map<String, Object> row = readYaml(new File(dir, "data/categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
         List<Map<String, Object>> items = (List<Map<String, Object>>) row.get("items");
         assertEquals(1, items.size(), "l'article doit être mis à jour, pas dupliqué");
         assertEquals(999, items.get(0).get("price"));
@@ -106,13 +107,13 @@ class CapturedItemWriterTest {
                 dir, "potion", 10, "Consommables", "item: p\n", Map.of("material", "POTION"));
 
         assertTrue(res.ok());
-        File rowFile = new File(dir, "data/categories/consommables.yaml");
+        File rowFile = new File(dir, "boutique_categories/consommables.yaml");
         assertTrue(rowFile.isFile(), "la catégorie doit être créée");
         Map<String, Object> row = readYaml(rowFile);
+        assertEquals("boutique_category/v1", row.get("schema"));
         assertEquals("Consommables", row.get("name"));
-
-        Map<String, Object> meta = readYaml(new File(dir, "data/categories/_source.yaml"));
-        assertEquals(List.of("weapons", "consommables"), meta.get("order"));
+        // Après les catégories existantes.
+        assertEquals(2, row.get("order"));
     }
 
     @Test
@@ -123,7 +124,7 @@ class CapturedItemWriterTest {
                 dir, "truc", 5, null, "item: t\n", Map.of("material", "STONE"));
 
         assertTrue(res.ok());
-        Map<String, Object> row = readYaml(new File(dir, "data/categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
         assertEquals(1, ((List<?>) row.get("items")).size());
     }
 
@@ -133,14 +134,14 @@ class CapturedItemWriterTest {
 
         CapturedItemWriter.addItem(dir, "a", 1, "weapons", "item: a\n", Map.of());
 
-        Map<String, Object> row = readYaml(new File(dir, "data/categories/weapons.yaml"));
+        Map<String, Object> row = readYaml(new File(dir, "boutique_categories/weapons.yaml"));
         assertEquals(1, ((List<?>) row.get("items")).size(), "matché par id");
         // Aucune catégorie parasite n'a été créée.
-        assertFalse(new File(dir, "data/categories/weapons_1.yaml").exists());
+        assertFalse(new File(dir, "boutique_categories/weapons_1.yaml").exists());
     }
 
     @Test
-    void sans_table_declaree_l_ecriture_est_refusee_proprement(@TempDir Path tmp) throws Exception {
+    void sans_project_l_ecriture_est_refusee_proprement(@TempDir Path tmp) throws Exception {
         File dir = tmp.resolve("vide").toFile();
         dir.mkdirs();
 

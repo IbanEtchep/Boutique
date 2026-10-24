@@ -34,7 +34,7 @@ class ShopRepoTest {
     @Test void migratesLegacyBuyCommandsIntoActionDsl() {
         ShopRepo repo = new ShopRepo();
         repo.load(path -> YAML, List.of("shop.yaml"));
-        String actions = repo.findItem("diamond_sword").orElseThrow().getActions();
+        Object actions = repo.findItem("diamond_sword").orElseThrow().getActions();
         assertEquals("run_command \"give {player} diamond_sword 1\" as console", actions);
     }
 
@@ -46,7 +46,7 @@ class ShopRepoTest {
                 "        actions: 'send_message \"Merci !\"'"));
         ShopRepo repo = new ShopRepo();
         repo.load(path -> yaml, List.of("shop.yaml"));
-        String actions = repo.findItem("diamond_sword").orElseThrow().getActions();
+        Object actions = repo.findItem("diamond_sword").orElseThrow().getActions();
         assertEquals("send_message \"Merci !\"", actions);
     }
 
@@ -103,5 +103,28 @@ class ShopRepoTest {
         // Missing translation falls back to the raw key (non-hermetic).
         assertEquals(java.util.List.of("Tranchante", "sources.categories.armes.items.lore_2"), item.getLore());
         assertEquals("give_item material=DIAMOND_SWORD count=1", item.getActions());
+    }
+
+    // ── boutique_category Documents ─────────────────────────────────────────
+
+    @Test void documentsAreSortedByOrderThenIdAndTextsPickTheLanguage() {
+        ShopRepo repo = new ShopRepo();
+        repo.loadCategories(List.of(
+                java.util.Map.of("id", "zeta", "name", "Zêta", "items", List.of()),
+                java.util.Map.of("id", "beta", "name", java.util.Map.of("fr", "Bêta", "en", "Beta"), "order", 2,
+                        "items", List.of(java.util.Map.of("id", "b1", "name", java.util.Map.of("en", "One"),
+                                "icon", java.util.Map.of("extends", "STONE", "title", java.util.Map.of("fr", "Pierre")),
+                                "price", 10,
+                                "actions", List.of(java.util.Map.of("send_message", "Merci"))))),
+                java.util.Map.of("id", "alpha", "name", "Alpha", "order", 1, "items", List.of())),
+                "fr", 0);
+
+        assertEquals(List.of("alpha", "beta", "zeta"), repo.categories().stream().map(c -> c.getId()).toList());
+        assertEquals("Bêta", repo.categories().get(1).getName());
+        var item = repo.findItem("b1").orElseThrow();
+        assertEquals("One", item.getName(), "no text in the language: the first one");
+        assertEquals(java.util.Map.of("extends", "STONE", "title", "Pierre"), item.getIcon());
+        assertTrue(item.hasActions());
+        assertEquals(List.of(java.util.Map.of("send_message", "Merci")), item.getActions());
     }
 }

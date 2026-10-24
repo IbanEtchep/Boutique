@@ -1,0 +1,14 @@
+schema: boutique_category/v1
+name: Armes
+icon: DIAMOND_SWORD
+discount: 0
+order: 1
+items:
+- id: diamond_sword
+  name: Épée en diamant
+  icon: DIAMOND_SWORD
+  price: 100
+  actions:
+  - run_command:
+      command: give {player} diamond_sword 1
+      as: console

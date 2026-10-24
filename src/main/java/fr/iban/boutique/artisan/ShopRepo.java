@@ -102,6 +102,73 @@ public final class ShopRepo {
         this.wholeShopDiscount = shopDiscount;
     }
 
+    /**
+     * Chargement depuis les Documents {@code boutique_category} du dossier
+     * ({@code boutique_categories/<id>.yaml}, un fichier par catégorie). Un texte y porte
+     * ses langues (ADR field-local-translations) : une chaîne, ou une map {@code {fr: …, en: …}}
+     * dont on prend {@code lang}, sinon la première. Les catégories sont triées par
+     * {@code order} (les plus petits d'abord, sans {@code order} après), puis par id.
+     *
+     * @param docs une map par fichier, {@code id} compris (le nom du fichier s'il manque)
+     */
+    @SuppressWarnings("unchecked")
+    public void loadCategories(List<Map<String, Object>> docs, String lang, int shopDiscount) {
+        List<Map<String, Object>> sorted = new ArrayList<>(docs);
+        sorted.sort(Comparator
+                .comparingDouble((Map<String, Object> d) -> d.get("order") instanceof Number n ? n.doubleValue() : Double.POSITIVE_INFINITY)
+                .thenComparing(d -> str(d, "id")));
+        List<ShopCategory> cats = new ArrayList<>();
+        Map<String, ShopItem> byId = new HashMap<>();
+        for (Map<String, Object> c : sorted) {
+            List<ShopItem> items = new ArrayList<>();
+            ShopCategory cat = new ShopCategory(
+                    str(c, "id"), localized(c.get("name"), lang), localizedIcon(c.getOrDefault("icon", ""), lang),
+                    asInt(c.get("discount"), 0), items);
+            for (Object rawItem : asList(c.get("items"))) {
+                if (!(rawItem instanceof Map)) continue;
+                Map<String, Object> i = (Map<String, Object>) rawItem;
+                ShopItem item = new ShopItem(
+                        str(i, "id"), localized(i.get("name"), lang), localizedIcon(i.getOrDefault("icon", ""), lang),
+                        asDouble(i.get("price")), asInt(i.get("discount"), 0),
+                        List.of(), actionsOf(i), cat);
+                items.add(item);
+                // Deux articles du même id : le premier reste celui qu'on achète.
+                byId.putIfAbsent(item.getId(), item);
+            }
+            cats.add(cat);
+        }
+        this.categories = List.copyOf(cats);
+        this.itemsById = Map.copyOf(byId);
+        this.wholeShopDiscount = shopDiscount;
+    }
+
+    /** Un texte au format du fichier : la chaîne, ou la valeur de {@code lang} (sinon la première). */
+    static String localized(Object value, String lang) {
+        Object picked = pick(value, lang);
+        return picked == null ? "" : picked.toString();
+    }
+
+    private static Object pick(Object value, String lang) {
+        if (!(value instanceof Map<?, ?> langs)) return value;
+        Object own = langs.get(lang);
+        if (own != null) return own;
+        return langs.isEmpty() ? null : langs.values().iterator().next();
+    }
+
+    /** L'icône avec ses textes ({@code title}, {@code lore}, aussi sous {@code extends}) dans {@code lang}. */
+    static Object localizedIcon(Object raw, String lang) {
+        if (!(raw instanceof Map<?, ?> map)) return raw;
+        Map<String, Object> out = new LinkedHashMap<>();
+        map.forEach((key, value) -> {
+            String name = key.toString();
+            Object next = value;
+            if (name.equals("extends")) next = localizedIcon(value, lang);
+            else if (name.equals("title") || name.equals("lore")) next = pick(value, lang);
+            out.put(name, next);
+        });
+        return out;
+    }
+
     private static Object translateIcon(Object raw, Map<String, String> lang, String address) {
         if (!(raw instanceof Map<?, ?> map)) return raw;
         Map<String, Object> out = new LinkedHashMap<>();
@@ -132,9 +199,11 @@ public final class ShopRepo {
      *  `buy_commands` legacy : une ligne `run_command "…" as console` par commande,
      *  `%player%` → `{player}` (placeholder du moteur de steps Artisan), jointes par
      *  des retours ligne. */
-    private static String actionsOf(Map<String, Object> i) {
+    private static Object actionsOf(Map<String, Object> i) {
         Object raw = i.get("actions");
         if (raw instanceof String s && !s.isBlank()) return s;
+        // Liste d'étapes keyed (ADR structured-action-wire) : ce que l'éditeur écrit.
+        if (raw instanceof List<?> steps && !steps.isEmpty()) return raw;
         StringBuilder sb = new StringBuilder();
         for (String cmd : strList(i.get("buy_commands"))) {
             if (sb.length() > 0) sb.append('\n');
