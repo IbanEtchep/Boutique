@@ -52,7 +52,7 @@ class YmlModuleTest {
         Files.writeString(new File(dir, "data/shop_settings.yml").toPath(), "whole_shop_discount: 5\n");
         Files.createDirectories(new File(dir, "models").toPath());
         Files.writeString(new File(dir, "models/shop_settings.yml").toPath(), "model: boutique:shop_settings\n");
-        SettingsMigrator.ensureSettings(dir, null, null, false);
+        SettingsMigrator.ensureSettings(dir, SettingsMigrator.Legacy.NONE);
         assertFalse(new File(dir, "data/shop_settings.yaml").exists());
         assertFalse(new File(dir, "models/shop_settings.yaml").exists());
         assertTrue(Files.readString(new File(dir, "data/shop_settings.yml").toPath()).contains("whole_shop_discount: 5"));

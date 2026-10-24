@@ -8,10 +8,29 @@ import java.util.Map;
  * un fichier absent, nu, legacy {@code data/v1} ou incomplet donne toujours des
  * réglages utilisables — jamais d'erreur (philosophie non-hermétique).
  */
-public record ShopSettings(int wholeShopDiscount, String priceDisplay, String discountPriceDisplay) {
+public record ShopSettings(int wholeShopDiscount, String priceDisplay, String discountPriceDisplay,
+                           Messages messages) {
+
+    /** Les messages de l'achat et de /tokens, en codes couleur {@code &} (bloc {@code messages}). */
+    public record Messages(String currencyName, String buySuccess, String notEnoughMoney, String noBuyCommands) {
+        public static Messages defaults() {
+            return new Messages(ShopModels.DEFAULT_CURRENCY_NAME, ShopModels.DEFAULT_BUY_SUCCESS,
+                    ShopModels.DEFAULT_NOT_ENOUGH_MONEY, ShopModels.DEFAULT_NO_BUY_COMMANDS);
+        }
+
+        static Messages parse(Object block) {
+            if (!(block instanceof Map<?, ?> m)) return defaults();
+            return new Messages(
+                    text(m, "currency_name", ShopModels.DEFAULT_CURRENCY_NAME),
+                    text(m, "buy_success", ShopModels.DEFAULT_BUY_SUCCESS),
+                    text(m, "not_enough_money", ShopModels.DEFAULT_NOT_ENOUGH_MONEY),
+                    text(m, "no_buy_commands", ShopModels.DEFAULT_NO_BUY_COMMANDS));
+        }
+    }
 
     public static ShopSettings defaults() {
-        return new ShopSettings(0, ShopModels.DEFAULT_PRICE_DISPLAY, ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY);
+        return new ShopSettings(0, ShopModels.DEFAULT_PRICE_DISPLAY, ShopModels.DEFAULT_DISCOUNT_PRICE_DISPLAY,
+                Messages.defaults());
     }
 
     /** Parse le contenu YAML du fichier de réglages ; {@code null} ⇒ défauts. */
@@ -34,7 +53,11 @@ public record ShopSettings(int wholeShopDiscount, String priceDisplay, String di
             if (p.get("price_display") instanceof String s && !s.isBlank()) price = s;
             if (p.get("discount_price_display") instanceof String s && !s.isBlank()) promo = s;
         }
-        return new ShopSettings(discount, price, promo);
+        return new ShopSettings(discount, price, promo, Messages.parse(root.get("messages")));
+    }
+
+    private static String text(Map<?, ?> block, String key, String fallback) {
+        return block.get(key) instanceof String s && !s.isBlank() ? s : fallback;
     }
 
     /**
