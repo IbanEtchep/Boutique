@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Un fichier YAML du dossier du module sous l'une ou l'autre extension : Artisan lit {@code .yml}
- * et {@code .yaml} depuis l'API 2.13.0, et ses fichiers passent en {@code .yml}. Le fichier de
+ * et {@code .yaml} depuis l'API 2.15.0, et ses fichiers passent en {@code .yml}. Le fichier de
  * module est {@code artisan-module.yml}, anciennement {@code manifest.yaml}.
  */
 final class YamlFiles {
