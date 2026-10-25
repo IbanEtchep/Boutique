@@ -5,6 +5,7 @@ import {
   type DocumentEditorProps,
   ItemInput,
   MiniMessageInput,
+  SortableList,
   type TextWrite,
   injectModuleStyles,
   newTextKey,
@@ -307,11 +308,18 @@ function CategoryView({
           <span className="bq-h">{t("items")}</span>
         </div>
         {category.items.length === 0 ? <span className="bq-hint">{t("noItems")}</span> : null}
-        <ul className="bq-list">
-          {category.items.map((item, i) => {
+        <SortableList
+          ids={rowIds}
+          onMove={(from, to) => edit((c) => move(c.items, from, to))}
+          className="bq-list"
+          itemClassName="bq-item"
+        >
+          {(i, handle) => {
+            const item = category.items[i]!;
             const paid = finalPrice(item.price, whole, category.discount, item.discount);
             return (
-              <li key={rowIds[i]} className="bq-item">
+              <>
+                {handle}
                 <button type="button" className="bq-item-main" onClick={() => onOpen(rowIds[i]!)}>
                   <span className="bq-item-name">
                     {textValue(project, item.name.key, lang) || item.id}
@@ -319,20 +327,6 @@ function CategoryView({
                   <span className="bq-item-mat">{iconMaterial(item.icon)}</span>
                   <span className="bq-price">{priceLabel(item.price, paid)}</span>
                 </button>
-                <IconButton
-                  label={t("moveUp")}
-                  disabled={i === 0}
-                  onClick={() => edit((c) => move(c.items, i, i - 1))}
-                >
-                  ↑
-                </IconButton>
-                <IconButton
-                  label={t("moveDown")}
-                  disabled={i === category.items.length - 1}
-                  onClick={() => edit((c) => move(c.items, i, i + 1))}
-                >
-                  ↓
-                </IconButton>
                 <IconButton
                   label={t("remove")}
                   onClick={() =>
@@ -343,10 +337,10 @@ function CategoryView({
                 >
                   ×
                 </IconButton>
-              </li>
+              </>
             );
-          })}
-        </ul>
+          }}
+        </SortableList>
         <Button variant="secondary" size="sm" className="bq-add" onClick={addItem}>
           + {t("addItem")}
         </Button>
