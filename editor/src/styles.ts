@@ -16,7 +16,7 @@ export const SHOP_CSS = `
 .bq-err { color: var(--danger); font-size: 11.5px; }
 .bq-ok { color: var(--success); font-size: 11.5px; }
 .bq-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.bq-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+.bq-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 2px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
 .bq-item-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; background: none; border: 0; color: inherit; text-align: left; padding: 3px 0; font: inherit; }
 .bq-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .bq-item-mat { color: var(--text-faint); font-size: 10.5px; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }

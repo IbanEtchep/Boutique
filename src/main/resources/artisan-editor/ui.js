@@ -1,6 +1,6 @@
-import { createModuleI18n as Y, fieldText as J, newTextKey as A, textValue as y, injectModuleStyles as G, useProject as Q, useContentLang as X, Button as $, selectDocumentItem as Z, ActionChainEditor as ee, updateDocument as te, MiniMessageInput as ne, ItemInput as ie, SDK_VERSION as oe } from "@artisan/editor-sdk";
-import { jsxs as h, jsx as s, Fragment as O } from "react/jsx-runtime";
-import { useState as re, useEffect as se } from "react";
+import { createModuleI18n as W, fieldText as Y, newTextKey as _, textValue as y, injectModuleStyles as J, useProject as U, useContentLang as G, Button as P, selectDocumentItem as Q, ActionChainEditor as X, updateDocument as Z, SortableList as ee, MiniMessageInput as te, ItemInput as ne, SDK_VERSION as ie } from "@artisan/editor-sdk";
+import { jsxs as h, jsx as s, Fragment as A } from "react/jsx-runtime";
+import { useState as oe, useEffect as re } from "react";
 const q = {
   kindLabel: "Shop categories",
   collection: "Catalog",
@@ -18,8 +18,6 @@ const q = {
   noItems: "No article yet.",
   open: "Edit",
   remove: "Remove",
-  moveUp: "Move up",
-  moveDown: "Move down",
   back: "Back to the category",
   item: "Article",
   id: "Id",
@@ -54,8 +52,6 @@ const q = {
   noItems: "Aucun article pour l'instant.",
   open: "Modifier",
   remove: "Supprimer",
-  moveUp: "Monter",
-  moveDown: "Descendre",
   back: "Retour à la catégorie",
   item: "Article",
   id: "Id",
@@ -73,90 +69,90 @@ const q = {
   itemCountOne: "{{count}} article",
   hoverPrice: "Prix : {{price}}",
   hoverPaid: "Payé : {{price}} (-{{percent}} %)"
-}, j = { en: q.kindLabel, fr: k.kindLabel }, ae = { en: q.collection, fr: k.collection }, ce = Y({ en: q, fr: k });
-function L(e) {
+}, j = { en: q.kindLabel, fr: k.kindLabel }, se = { en: q.collection, fr: k.collection }, ae = W({ en: q, fr: k });
+function $(e) {
   const t = e === "fr" ? k : q;
   return (n, o) => {
     const i = t[n] ?? q[n] ?? n;
     return o ? i.replace(/\{\{(\w+)\}\}/g, (a, r) => String(o[r] ?? a)) : i;
   };
 }
-const w = "boutique_category", E = "catalogue", D = "boutique_category/v1", le = "boutique_addon";
-function I(e) {
+const I = "boutique_category", O = "catalogue", L = "boutique_category/v1", ce = "boutique_addon";
+function C(e) {
   return e && typeof e == "object" && !Array.isArray(e) ? { ...e } : {};
 }
-function de(e) {
+function le(e) {
   return Array.isArray(e) ? e : [];
 }
-function v(e) {
+function x(e) {
   return typeof e == "string" || typeof e == "number" || typeof e == "boolean" ? String(e) : "";
 }
 function g(e, t = 0) {
   return typeof e == "number" && Number.isFinite(e) ? e : typeof e == "string" && e.trim() !== "" && Number.isFinite(Number(e)) ? Number(e) : t;
 }
-function x(e, ...t) {
+function v(e, ...t) {
   const n = { ...e };
   for (const o of t) delete n[o];
   return n;
 }
-function ue(e) {
+function de(e) {
   return e.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
-function me(e, t) {
+function ue(e, t) {
   const n = new Set(t);
   if (!n.has(e)) return e;
   for (let o = 2; ; o++) if (!n.has(`${e}_${o}`)) return `${e}_${o}`;
 }
-function C(e, ...t) {
+function w(e, ...t) {
   const n = t.reduce((o, i) => o + i, 0);
   return Math.round(Math.max(0, e * (1 - n / 100)));
 }
-function pe(e, t) {
+function me(e, t) {
   const n = {}, o = [];
   function i(c) {
     if (c && typeof c == "object" && !Array.isArray(c)) {
-      const d = A(), p = {};
-      for (const [f, b] of Object.entries(c)) p[f] = v(b);
-      return n[d] = p, { key: d };
+      const m = _(), u = {};
+      for (const [f, b] of Object.entries(c)) u[f] = x(b);
+      return n[m] = u, { key: m };
     }
-    const m = typeof c == "string" ? /^\{i18n:(.+)\}$/.exec(c) : null;
-    if (m) {
-      const d = t.translations?.[m[1]];
-      return d && (n[m[1]] = { ...d }), { key: m[1] };
+    const p = typeof c == "string" ? /^\{i18n:(.+)\}$/.exec(c) : null;
+    if (p) {
+      const m = t.translations?.[p[1]];
+      return m && (n[p[1]] = { ...m }), { key: p[1] };
     }
-    const l = A();
-    return n[l] = c == null || c === "" ? {} : { [t.lang]: v(c) }, { key: l };
+    const l = _();
+    return n[l] = c == null || c === "" ? {} : { [t.lang]: x(c) }, { key: l };
   }
-  const a = de(e.items).map((c, m) => {
-    const l = I(c);
+  const a = le(e.items).map((c, p) => {
+    const l = C(c);
     return {
-      id: v(l.id) || `item_${m + 1}`,
+      id: x(l.id) || `item_${p + 1}`,
       name: i(l.name),
       icon: l.icon ?? "",
       price: g(l.price),
       discount: g(l.discount),
       actions: l.actions ?? null,
-      rest: x(l, "id", "name", "icon", "price", "discount", "actions")
+      rest: v(l, "id", "name", "icon", "price", "discount", "actions")
     };
   }), r = e.order == null ? void 0 : g(e.order, Number.NaN);
   return { doc: {
-    id: v(e.id),
+    id: x(e.id),
     projectId: t.projectId,
     name: i(e.name),
     icon: e.icon ?? "",
     discount: g(e.discount),
     order: r === void 0 || Number.isNaN(r) ? void 0 : r,
     items: a,
-    rest: x(e, "id", "schema", "name", "icon", "discount", "order", "items")
+    rest: v(e, "id", "schema", "name", "icon", "discount", "order", "items")
   }, i18nKeys: n, unsupported: o };
 }
-function fe(e) {
+function pe(e) {
   return e == null ? !0 : typeof e == "string" ? e.trim() === "" : Array.isArray(e) && e.length === 0;
 }
-function he(e, t) {
-  const n = (i) => J(t, i.key), o = {
+function fe(e, t) {
+  const n = (i) => Y(t, i.key), o = {
     id: e.id,
-    schema: D,
+    schema: L,
     name: n(e.name),
     icon: e.icon === "" ? void 0 : e.icon,
     discount: e.discount,
@@ -170,7 +166,7 @@ function he(e, t) {
         price: i.price,
         discount: i.discount === 0 ? void 0 : i.discount,
         ...i.rest,
-        actions: fe(i.actions) ? void 0 : i.actions
+        actions: pe(i.actions) ? void 0 : i.actions
       };
       for (const r of Object.keys(a)) a[r] === void 0 && delete a[r];
       return a;
@@ -179,8 +175,8 @@ function he(e, t) {
   for (const i of Object.keys(o)) o[i] === void 0 && delete o[i];
   return o;
 }
-function* be(e) {
-  const t = `${E}.${e.id}`;
+function* he(e) {
+  const t = `${O}.${e.id}`;
   yield { lText: e.name, key: `${t}.name`, path: "name", kind: "boutique_category.name" };
   const n = /* @__PURE__ */ new Set();
   for (let o = 0; o < e.items.length; o++) {
@@ -193,31 +189,31 @@ function* be(e) {
     };
   }
 }
-function ge(e, t) {
+function be(e, t) {
   if (typeof e == "string") return e ? { material: e } : {};
-  const n = I(e), o = n.extends ?? n.item ?? n.material, i = x(n, "extends", "item", "material");
+  const n = C(e), o = n.extends ?? n.item ?? n.material, i = v(n, "extends", "item", "material");
   o !== void 0 && (i.material = typeof o == "string" ? o : "");
   for (const a of ["title", "lore"]) {
     const r = i[a];
     if (r && typeof r == "object" && !Array.isArray(r)) {
-      const u = r;
-      i[a] = u[t] ?? Object.values(u)[0];
+      const d = r;
+      i[a] = d[t] ?? Object.values(d)[0];
     }
   }
   return i;
 }
-function ye(e) {
-  const t = typeof e.material == "string" ? e.material : "", n = x(e, "material");
+function ge(e) {
+  const t = typeof e.material == "string" ? e.material : "", n = v(e, "material");
   for (const o of Object.keys(n)) {
     const i = n[o];
     (i === void 0 || i === "" || Array.isArray(i) && i.length === 0) && delete n[o];
   }
   return Object.keys(n).length === 0 ? t : { extends: t, ...n };
 }
-function z(e) {
+function E(e) {
   if (typeof e == "string") return e;
-  const t = I(e), n = t.extends ?? t.item ?? t.material;
-  return n === void 0 ? "" : z(n);
+  const t = C(e), n = t.extends ?? t.item ?? t.material;
+  return n === void 0 ? "" : E(n);
 }
 function H(e) {
   const t = /* @__PURE__ */ new Set();
@@ -226,45 +222,45 @@ function H(e) {
     return t.add(n.id), i;
   });
 }
-const qe = "#d97706";
-function R(e) {
+const ye = "#d97706";
+function z(e) {
   const t = e?.dataSources?.find(
     (n) => String(n.id) === "shop_settings"
   );
-  return I(t?.value);
+  return C(t?.value);
 }
 function S(e) {
-  return g(R(e).whole_shop_discount);
+  return g(z(e).whole_shop_discount);
 }
-function F(e) {
+function D(e) {
   return e.replace(/<[^<>]*>/g, "").replace(/[&§]#[0-9a-fA-F]{6}/g, "").replace(/#[0-9a-fA-F]{6}/g, "").replace(/[&§][0-9a-fk-orx]/gi, "").trim();
 }
-function B(e, t) {
+function R(e, t) {
   const n = Math.round(e);
   if (t >= n) return String(n);
   const o = n <= 0 ? 0 : Math.round((n - t) * 100 / n);
   return `${t} (-${o}%)`;
 }
-function ve(e, t, n) {
-  const o = L(n), i = S(t), a = H(e);
-  return e.items.map((r, u) => {
-    const c = a[u], m = F(y(t, r.name.key, n)) || r.id, l = C(r.price, i, e.discount, r.discount), d = [o("hoverPrice", { price: String(Math.round(r.price)) })], p = i + e.discount + r.discount;
-    return p > 0 && d.push(o("hoverPaid", { price: String(l), percent: String(p) })), {
+function qe(e, t, n) {
+  const o = $(n), i = S(t), a = H(e);
+  return e.items.map((r, d) => {
+    const c = a[d], p = D(y(t, r.name.key, n)) || r.id, l = w(r.price, i, e.discount, r.discount), m = [o("hoverPrice", { price: String(Math.round(r.price)) })], u = i + e.discount + r.discount;
+    return u > 0 && m.push(o("hoverPaid", { price: String(l), percent: String(u) })), {
       id: c,
-      label: m,
-      detail: B(r.price, l),
+      label: p,
+      detail: R(r.price, l),
       icon: r.icon,
-      hover: { title: m, lines: d }
+      hover: { title: p, lines: m }
     };
   });
 }
 function xe(e, t) {
-  const o = L(t)(e.items.length === 1 ? "itemCountOne" : "itemCount", {
+  const o = $(t)(e.items.length === 1 ? "itemCountOne" : "itemCount", {
     count: String(e.items.length)
   });
   return e.discount > 0 ? `${o} · -${e.discount}%` : o;
 }
-const Ne = `
+const ve = `
 .bq { display: flex; flex-direction: column; gap: 14px; padding: 12px; color: var(--text); font-size: 12.5px; }
 .bq .input { height: 32px; padding: 5px 10px; font-size: 12.5px; }
 .bq-section { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border-soft); }
@@ -278,7 +274,7 @@ const Ne = `
 .bq-err { color: var(--danger); font-size: 11.5px; }
 .bq-ok { color: var(--success); font-size: 11.5px; }
 .bq-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.bq-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
+.bq-item { display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 2px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--surface); }
 .bq-item-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; background: none; border: 0; color: inherit; text-align: left; padding: 3px 0; font: inherit; }
 .bq-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .bq-item-mat { color: var(--text-faint); font-size: 10.5px; font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
@@ -291,35 +287,35 @@ const Ne = `
 .bq-add { align-self: flex-start; }
 .bq-mono { font-family: var(--font-mono); }
 `;
-function ke({ projectId: e, documentId: t, document: n, item: o }) {
-  G("boutique", Ne);
-  const i = n, a = Q(e), r = X(), u = ce(), [c, m] = re(o ?? null);
-  se(() => {
-    m(o ?? null);
+function Ne({ projectId: e, documentId: t, document: n, item: o }) {
+  J("boutique", ve);
+  const i = n, a = U(e), r = G(), d = ae(), [c, p] = oe(o ?? null);
+  re(() => {
+    p(o ?? null);
   }, [o]);
   const l = (b) => {
-    m(b), Z({ documentId: t, item: b });
-  }, p = { projectId: e, project: a, lang: r, t: u, edit: (b, W) => {
-    const T = structuredClone(i);
-    b(T), te({ projectId: e, kind: w, id: t, doc: T, texts: W });
+    p(b), Q({ documentId: t, item: b });
+  }, u = { projectId: e, project: a, lang: r, t: d, edit: (b, V) => {
+    const M = structuredClone(i);
+    b(M), Z({ projectId: e, kind: I, id: t, doc: M, texts: V });
   } }, f = c ? H(i).indexOf(c) : -1;
   return f >= 0 ? /* @__PURE__ */ h("div", { className: "bq", children: [
-    /* @__PURE__ */ h($, { variant: "ghost", size: "sm", className: "bq-back", onClick: () => l(null), children: [
+    /* @__PURE__ */ h(P, { variant: "ghost", size: "sm", className: "bq-back", onClick: () => l(null), children: [
       "← ",
-      u("back")
+      d("back")
     ] }),
     /* @__PURE__ */ s(
-      Ie,
+      we,
       {
-        ctx: p,
+        ctx: u,
         category: i,
         index: f,
-        onIdChange: (b) => m(b)
+        onIdChange: (b) => p(b)
       }
     )
-  ] }) : /* @__PURE__ */ s("div", { className: "bq", children: /* @__PURE__ */ s(we, { ctx: p, category: i, onOpen: l }) });
+  ] }) : /* @__PURE__ */ s("div", { className: "bq", children: /* @__PURE__ */ s(Ce, { ctx: u, category: i, onOpen: l }) });
 }
-function M({
+function T({
   label: e,
   children: t,
   hint: n
@@ -333,10 +329,10 @@ function M({
     ] })
   );
 }
-function K({ ctx: e, label: t, node: n }) {
+function F({ ctx: e, label: t, node: n }) {
   const o = y(e.project, n.key, e.lang), i = (a) => e.edit(() => {
   }, [{ key: n.key, lang: e.lang, value: a }]);
-  return /* @__PURE__ */ s(M, { label: `${t} · ${e.lang}`, children: /* @__PURE__ */ s(ne, { value: o, onChange: i, "aria-label": t }) });
+  return /* @__PURE__ */ s(T, { label: `${t} · ${e.lang}`, children: /* @__PURE__ */ s(te, { value: o, onChange: i, "aria-label": t }) });
 }
 function N({
   label: e,
@@ -347,7 +343,7 @@ function N({
   optional: a,
   integer: r
 }) {
-  return /* @__PURE__ */ s(M, { label: e, hint: o ? /* @__PURE__ */ s("span", { className: "bq-hint", children: o }) : void 0, children: /* @__PURE__ */ s(
+  return /* @__PURE__ */ s(T, { label: e, hint: o ? /* @__PURE__ */ s("span", { className: "bq-hint", children: o }) : void 0, children: /* @__PURE__ */ s(
     "input",
     {
       className: "input",
@@ -356,16 +352,16 @@ function N({
       max: i,
       step: r ? 1 : "any",
       value: t === void 0 ? "" : String(t),
-      onChange: (u) => {
-        const c = u.target.value.trim();
+      onChange: (d) => {
+        const c = d.target.value.trim();
         if (c === "") return n(a ? void 0 : 0);
-        const m = Math.max(0, r ? Math.round(Number(c)) : Number(c));
-        Number.isFinite(m) && n(i === void 0 ? m : Math.min(i, m));
+        const p = Math.max(0, r ? Math.round(Number(c)) : Number(c));
+        Number.isFinite(p) && n(i === void 0 ? p : Math.min(i, p));
       }
     }
   ) });
 }
-function V({
+function B({
   ctx: e,
   label: t,
   hint: n,
@@ -375,17 +371,17 @@ function V({
   return /* @__PURE__ */ h("div", { className: "bq-field", children: [
     /* @__PURE__ */ s("span", { className: "field-label", children: t }),
     /* @__PURE__ */ s(
-      ie,
+      ne,
       {
         projectId: e.projectId,
-        value: ge(o, e.lang),
-        onChange: (a) => i(ye(a))
+        value: be(o, e.lang),
+        onChange: (a) => i(ge(a))
       }
     ),
     /* @__PURE__ */ s("span", { className: "bq-hint", children: n })
   ] });
 }
-function _({
+function ke({
   label: e,
   onClick: t,
   disabled: n,
@@ -404,33 +400,33 @@ function _({
     }
   );
 }
-function P(e, t, n) {
+function Ie(e, t, n) {
   if (n < 0 || n >= e.length) return;
   const [o] = e.splice(t, 1);
   e.splice(n, 0, o);
 }
-function U(e, t, n) {
-  const o = /* @__PURE__ */ new Set(), i = e?.documents?.[w];
+function K(e, t, n) {
+  const o = /* @__PURE__ */ new Set(), i = e?.documents?.[I];
   for (const a of i ?? []) {
     const r = a;
     if (r.id !== t.id)
-      for (const u of r.items ?? []) o.add(u.id);
+      for (const d of r.items ?? []) o.add(d.id);
   }
   return t.items.forEach((a, r) => {
     r !== n && o.add(a.id);
   }), o;
 }
-function we({
+function Ce({
   ctx: e,
   category: t,
   onOpen: n
 }) {
-  const { t: o, edit: i, project: a, lang: r } = e, u = S(a), c = H(t), m = () => {
-    const l = A(), d = me("item", U(a, t, -1));
+  const { t: o, edit: i, project: a, lang: r } = e, d = S(a), c = H(t), p = () => {
+    const l = _(), m = ue("item", K(a, t, -1));
     i(
-      (p) => {
-        p.items.push({
-          id: d,
+      (u) => {
+        u.items.push({
+          id: m,
           name: { key: l },
           icon: "CHEST",
           price: 0,
@@ -440,21 +436,21 @@ function we({
         });
       },
       [{ key: l, lang: r, value: o("newItemName") }]
-    ), n(d);
+    ), n(m);
   };
-  return /* @__PURE__ */ h(O, { children: [
+  return /* @__PURE__ */ h(A, { children: [
     /* @__PURE__ */ h("section", { className: "bq-section", children: [
       /* @__PURE__ */ s("span", { className: "bq-h", children: o("category") }),
-      /* @__PURE__ */ s(K, { ctx: e, label: o("name"), node: t.name }),
+      /* @__PURE__ */ s(F, { ctx: e, label: o("name"), node: t.name }),
       /* @__PURE__ */ s(
-        V,
+        B,
         {
           ctx: e,
           label: o("icon"),
           hint: o("iconHint"),
           value: t.icon,
-          onChange: (l) => i((d) => {
-            d.icon = l;
+          onChange: (l) => i((m) => {
+            m.icon = l;
           })
         }
       ),
@@ -467,8 +463,8 @@ function we({
             max: 100,
             integer: !0,
             value: t.discount,
-            onChange: (l) => i((d) => {
-              d.discount = l ?? 0;
+            onChange: (l) => i((m) => {
+              m.discount = l ?? 0;
             })
           }
         ),
@@ -480,8 +476,8 @@ function we({
             optional: !0,
             integer: !0,
             value: t.order,
-            onChange: (l) => i((d) => {
-              d.order = l;
+            onChange: (l) => i((m) => {
+              m.order = l;
             })
           }
         )
@@ -490,76 +486,68 @@ function we({
     /* @__PURE__ */ h("section", { className: "bq-section", children: [
       /* @__PURE__ */ s("div", { className: "bq-head", children: /* @__PURE__ */ s("span", { className: "bq-h", children: o("items") }) }),
       t.items.length === 0 ? /* @__PURE__ */ s("span", { className: "bq-hint", children: o("noItems") }) : null,
-      /* @__PURE__ */ s("ul", { className: "bq-list", children: t.items.map((l, d) => {
-        const p = C(l.price, u, t.discount, l.discount);
-        return /* @__PURE__ */ h("li", { className: "bq-item", children: [
-          /* @__PURE__ */ h("button", { type: "button", className: "bq-item-main", onClick: () => n(c[d]), children: [
-            /* @__PURE__ */ s("span", { className: "bq-item-name", children: y(a, l.name.key, r) || l.id }),
-            /* @__PURE__ */ s("span", { className: "bq-item-mat", children: z(l.icon) }),
-            /* @__PURE__ */ s("span", { className: "bq-price", children: B(l.price, p) })
-          ] }),
-          /* @__PURE__ */ s(
-            _,
-            {
-              label: o("moveUp"),
-              disabled: d === 0,
-              onClick: () => i((f) => P(f.items, d, d - 1)),
-              children: "↑"
-            }
-          ),
-          /* @__PURE__ */ s(
-            _,
-            {
-              label: o("moveDown"),
-              disabled: d === t.items.length - 1,
-              onClick: () => i((f) => P(f.items, d, d + 1)),
-              children: "↓"
-            }
-          ),
-          /* @__PURE__ */ s(
-            _,
-            {
-              label: o("remove"),
-              onClick: () => i((f) => {
-                f.items.splice(d, 1);
-              }),
-              children: "×"
-            }
-          )
-        ] }, c[d]);
-      }) }),
-      /* @__PURE__ */ h($, { variant: "secondary", size: "sm", className: "bq-add", onClick: m, children: [
+      /* @__PURE__ */ s(
+        ee,
+        {
+          ids: c,
+          onMove: (l, m) => i((u) => Ie(u.items, l, m)),
+          className: "bq-list",
+          itemClassName: "bq-item",
+          children: (l, m) => {
+            const u = t.items[l], f = w(u.price, d, t.discount, u.discount);
+            return /* @__PURE__ */ h(A, { children: [
+              m,
+              /* @__PURE__ */ h("button", { type: "button", className: "bq-item-main", onClick: () => n(c[l]), children: [
+                /* @__PURE__ */ s("span", { className: "bq-item-name", children: y(a, u.name.key, r) || u.id }),
+                /* @__PURE__ */ s("span", { className: "bq-item-mat", children: E(u.icon) }),
+                /* @__PURE__ */ s("span", { className: "bq-price", children: R(u.price, f) })
+              ] }),
+              /* @__PURE__ */ s(
+                ke,
+                {
+                  label: o("remove"),
+                  onClick: () => i((b) => {
+                    b.items.splice(l, 1);
+                  }),
+                  children: "×"
+                }
+              )
+            ] });
+          }
+        }
+      ),
+      /* @__PURE__ */ h(P, { variant: "secondary", size: "sm", className: "bq-add", onClick: p, children: [
         "+ ",
         o("addItem")
       ] })
     ] })
   ] });
 }
-function Ie({
+function we({
   ctx: e,
   category: t,
   index: n,
   onIdChange: o
 }) {
-  const { t: i, edit: a, project: r } = e, u = t.items[n], c = (p) => a((f) => {
-    p(f.items[n]);
-  }), m = U(r, t, n).has(u.id), l = C(u.price, S(r), t.discount, u.discount), d = Object.keys(u.rest);
-  return /* @__PURE__ */ h(O, { children: [
+  const { t: i, edit: a, project: r } = e, d = t.items[n], c = (u) => a((f) => {
+    u(f.items[n]);
+  }), p = K(r, t, n).has(d.id), l = w(d.price, S(r), t.discount, d.discount), m = Object.keys(d.rest);
+  return /* @__PURE__ */ h(A, { children: [
     /* @__PURE__ */ h("section", { className: "bq-section", children: [
       /* @__PURE__ */ s("span", { className: "bq-h", children: i("item") }),
-      /* @__PURE__ */ s(K, { ctx: e, label: i("name"), node: u.name }),
+      /* @__PURE__ */ s(F, { ctx: e, label: i("name"), node: d.name }),
       /* @__PURE__ */ s(
-        M,
+        T,
         {
           label: i("id"),
-          hint: m ? /* @__PURE__ */ s("span", { className: "bq-err", children: i("idTaken") }) : /* @__PURE__ */ s("span", { className: "bq-hint", children: i("idHint") }),
+          hint: p ? /* @__PURE__ */ s("span", { className: "bq-err", children: i("idTaken") }) : /* @__PURE__ */ s("span", { className: "bq-hint", children: i("idHint") }),
           children: /* @__PURE__ */ s(
             "input",
             {
               className: "input bq-mono",
-              value: u.id,
-              onChange: (p) => {
-                const f = ue(p.target.value);
+              value: d.id,
+              onChange: (u) => {
+                const f = de(u.target.value);
                 c((b) => {
                   b.id = f;
                 }), o(f);
@@ -569,14 +557,14 @@ function Ie({
         }
       ),
       /* @__PURE__ */ s(
-        V,
+        B,
         {
           ctx: e,
           label: i("itemIcon"),
           hint: i("itemIconHint"),
-          value: u.icon,
-          onChange: (p) => c((f) => {
-            f.icon = p;
+          value: d.icon,
+          onChange: (u) => c((f) => {
+            f.icon = u;
           })
         }
       ),
@@ -585,9 +573,9 @@ function Ie({
           N,
           {
             label: i("price"),
-            value: u.price,
-            onChange: (p) => c((f) => {
-              f.price = p ?? 0;
+            value: d.price,
+            onChange: (u) => c((f) => {
+              f.price = u ?? 0;
             })
           }
         ),
@@ -598,9 +586,9 @@ function Ie({
             hint: i("itemDiscountHint"),
             max: 100,
             integer: !0,
-            value: u.discount,
-            onChange: (p) => c((f) => {
-              f.discount = p ?? 0;
+            value: d.discount,
+            onChange: (u) => c((f) => {
+              f.discount = u ?? 0;
             })
           }
         )
@@ -611,32 +599,32 @@ function Ie({
       /* @__PURE__ */ s("span", { className: "bq-h", children: i("actions") }),
       /* @__PURE__ */ s("span", { className: "bq-hint", children: i("actionsHint") }),
       /* @__PURE__ */ s(
-        ee,
+        X,
         {
           projectId: e.projectId,
-          value: u.actions ?? [],
-          onChange: (p) => c((f) => {
-            f.actions = p;
+          value: d.actions ?? [],
+          onChange: (u) => c((f) => {
+            f.actions = u;
           })
         }
       )
     ] }),
-    d.length > 0 ? /* @__PURE__ */ s("span", { className: "bq-hint", children: i("kept", { fields: d.join(", ") }) }) : null
+    m.length > 0 ? /* @__PURE__ */ s("span", { className: "bq-hint", children: i("kept", { fields: m.join(", ") }) }) : null
   ] });
 }
-const Ce = {
-  kind: w,
-  dir: E,
-  schemaVersion: D,
+const Se = {
+  kind: I,
+  dir: O,
+  schemaVersion: L,
   // A category's id names it in the menus (`category` of shop_category): typed by hand.
-  projects: [le],
+  projects: [ce],
   // The catalogue (SDK 1.9): one entry and one page, off the board, its settings on top.
   // The categories stay in catalogue/ at the folder's root, the only place read.
-  collection: { labels: ae },
+  collection: { labels: se },
   label: j.en,
   labels: j,
-  component: ke,
-  title: (e, { project: t, lang: n }) => F(y(t, e.name.key, n)),
+  component: Ne,
+  title: (e, { project: t, lang: n }) => D(y(t, e.name.key, n)),
   create: ({ id: e, projectId: t }) => ({
     id: e,
     projectId: t,
@@ -648,65 +636,65 @@ const Ce = {
     items: [],
     rest: {}
   }),
-  parse: (e, t) => pe(e, t),
-  serialize: (e, t) => he(e, t),
-  ltextSites: (e) => be(e),
+  parse: (e, t) => me(e, t),
+  serialize: (e, t) => fe(e, t),
+  ltextSites: (e) => he(e),
   board: {
     size: { width: 260, height: 48 },
-    accent: qe,
-    items: (e, { project: t, lang: n }) => ve(e, t, n),
+    accent: ye,
+    items: (e, { project: t, lang: n }) => qe(e, t, n),
     summary: (e, { lang: t }) => xe(e, t)
   }
 };
-function Se(e, t, n) {
-  const o = n.placeholders, i = t < Math.round(e), a = o?.[i ? "discount_price_display" : "price_display"], r = typeof a == "string" && a.trim() ? a : i ? "&m%old_price% &f%price% tokens (-%discount_percent%%)" : "%price% tokens", u = Math.round(e);
-  return r.replaceAll("%old_price%", String(u)).replaceAll("%discount_percent%", String(u <= 0 ? 0 : Math.round((u - t) * 100 / u))).replaceAll("%price%", String(t));
+function _e(e, t, n) {
+  const o = n.placeholders, i = t < Math.round(e), a = o?.[i ? "discount_price_display" : "price_display"], r = typeof a == "string" && a.trim() ? a : i ? "&m%old_price% &f%price% tokens (-%discount_percent%%)" : "%price% tokens", d = Math.round(e);
+  return r.replaceAll("%old_price%", String(d)).replaceAll("%discount_percent%", String(d <= 0 ? 0 : Math.round((d - t) * 100 / d))).replaceAll("%price%", String(t));
 }
-function _e(e) {
+function Ae(e) {
   return [...e].sort((t, n) => {
     const o = t.order ?? Number.POSITIVE_INFINITY, i = n.order ?? Number.POSITIVE_INFINITY;
     return o !== i ? o - i : t.id.localeCompare(n.id);
   });
 }
-function Ae(e, t) {
+function He(e, t) {
   if (t !== "boutique:categories" && t !== "boutique:items") return null;
-  const n = e.documents?.[w];
+  const n = e.documents?.[I];
   if (!n || n.length === 0) return null;
-  const o = e.defaultLang ?? "fr", i = R(e), a = S(e), r = _e(n), u = (c) => c.items.map((m) => {
-    const l = g(m.price), d = C(l, a, c.discount, m.discount);
+  const o = e.defaultLang ?? "fr", i = z(e), a = S(e), r = Ae(n), d = (c) => c.items.map((p) => {
+    const l = g(p.price), m = w(l, a, c.discount, p.discount);
     return {
-      id: m.id,
-      name: y(e, m.name.key, o),
-      icon: m.icon,
+      id: p.id,
+      name: y(e, p.name.key, o),
+      icon: p.icon,
       category: c.id,
       price: l,
-      final_price: d,
-      price_display: Se(l, d, i),
+      final_price: m,
+      price_display: _e(l, m, i),
       lore: ""
     };
   });
-  return t === "boutique:items" ? r.flatMap(u) : r.map((c) => ({
+  return t === "boutique:items" ? r.flatMap(d) : r.map((c) => ({
     id: c.id,
     name: y(e, c.name.key, o),
     icon: c.icon,
-    items: u(c)
+    items: d(c)
   }));
 }
-const He = {
+const Te = {
   id: "boutique",
   displayName: "Boutique",
   schemaVersion: "boutique/v1",
-  sdk: oe,
+  sdk: ie,
   sidebar: { icon: () => null, label: "Boutique", to: "/m/boutique" },
   // Categories are Documents of the folder; the settings are a screen the plugin declares.
   routes: [],
-  documents: [Ce],
-  localPreviewRows: Ae,
+  documents: [Se],
+  localPreviewRows: He,
   dataSourceModels: {
     "boutique:items": "boutique:item",
     "boutique:categories": "boutique:category"
   }
-}, Pe = { ...He, sdk: "1.9.0" };
+}, $e = { ...Te, sdk: "1.10.0" };
 export {
-  Pe as default
+  $e as default
 };
