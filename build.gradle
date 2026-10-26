@@ -3,8 +3,8 @@ plugins {
     id 'com.gradleup.shadow' version '8.3.6'
 }
 
-group = 'fr.iban'
-version = '2.1.0'
+group = 'net.artisanmc'
+version = '3.0.0'
 
 repositories {
     mavenCentral()
@@ -64,7 +64,7 @@ jar {
 }
 
 shadowJar {
-    archiveFileName = "Boutique-${version}.jar"
+    archiveFileName = "ArtisanStore-${version}.jar"
 }
 
 tasks.named('assemble') {

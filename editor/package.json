@@ -1,9 +1,9 @@
 {
-  "name": "@boutique/editor",
+  "name": "@artisan-store/editor",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "The boutique_category view of the Artisan editor, built into the Boutique jar (artisan-editor/ui.js).",
+  "description": "The boutique_category view of the Artisan editor, built into the ArtisanStore jar (artisan-editor/ui.js).",
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "watch": "vite build --watch",

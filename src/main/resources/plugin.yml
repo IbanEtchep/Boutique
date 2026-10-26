@@ -1,13 +1,24 @@
-name: Boutique
+name: ArtisanStore
 version: ${version}
-main: fr.iban.boutique.ShopPlugin
+main: net.artisanmc.store.StorePlugin
 api-version: '1.21'
+description: Real-money store for the Artisan suite (tokens bought on the website, spent in game)
 depend: [Artisan]
 softdepend: [PlaceholderAPI]
 commands:
   tokens:
     description: Gestion des tokens
-  boutiqueadmin:
-    description: Administration de la boutique (additem depuis l'item en main)
-    aliases: [badd]
-    permission: boutique.admin
+  storeadmin:
+    description: Administration du store (additem depuis l'item en main)
+    aliases: [boutiqueadmin, badd]
+    permission: store.admin
+permissions:
+  store.admin:
+    description: Ajoute au catalogue l'item tenu en main (/storeadmin additem)
+    default: op
+  # Le nom d'avant Store : les groupes qui l'ont gardent l'accès.
+  boutique.admin:
+    description: Ancien nom de store.admin
+    default: op
+    children:
+      store.admin: true

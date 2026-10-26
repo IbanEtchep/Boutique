@@ -2,15 +2,15 @@ import { createModuleI18n as W, fieldText as Y, newTextKey as _, textValue as y,
 import { jsxs as h, jsx as s, Fragment as A } from "react/jsx-runtime";
 import { useState as oe, useEffect as re } from "react";
 const q = {
-  kindLabel: "Shop categories",
+  kindLabel: "Store categories",
   collection: "Catalog",
   category: "Category",
   name: "Name",
   icon: "Icon",
   iconHint: "What the main menu shows for this category.",
   discount: "Discount (%)",
-  categoryDiscountHint: "Taken off every article of the category, added to the shop's and the article's.",
-  order: "Position in the shop",
+  categoryDiscountHint: "Taken off every article of the category, added to the store's and the article's.",
+  order: "Position in the store",
   orderHint: "Lower first; empty: after the others, by id.",
   items: "Articles",
   addItem: "New article",
@@ -21,8 +21,8 @@ const q = {
   back: "Back to the category",
   item: "Article",
   id: "Id",
-  idHint: "Names the article in purchases: unique across the shop.",
-  idTaken: "Another article of the shop has this id: a purchase could buy the wrong one.",
+  idHint: "Names the article in purchases: unique across the store.",
+  idTaken: "Another article of the store has this id: a purchase could buy the wrong one.",
   itemIcon: "Icon",
   itemIconHint: "What the player sees in the category's menu: item, name, lore.",
   price: "Price",
@@ -295,9 +295,9 @@ function Ne({ projectId: e, documentId: t, document: n, item: o }) {
   }, [o]);
   const l = (b) => {
     p(b), Q({ documentId: t, item: b });
-  }, u = { projectId: e, project: a, lang: r, t: d, edit: (b, V) => {
+  }, u = { projectId: e, project: a, lang: r, t: d, edit: (b, B) => {
     const M = structuredClone(i);
-    b(M), Z({ projectId: e, kind: I, id: t, doc: M, texts: V });
+    b(M), Z({ projectId: e, kind: I, id: t, doc: M, texts: B });
   } }, f = c ? H(i).indexOf(c) : -1;
   return f >= 0 ? /* @__PURE__ */ h("div", { className: "bq", children: [
     /* @__PURE__ */ h(P, { variant: "ghost", size: "sm", className: "bq-back", onClick: () => l(null), children: [
@@ -361,7 +361,7 @@ function N({
     }
   ) });
 }
-function B({
+function K({
   ctx: e,
   label: t,
   hint: n,
@@ -405,7 +405,7 @@ function Ie(e, t, n) {
   const [o] = e.splice(t, 1);
   e.splice(n, 0, o);
 }
-function K(e, t, n) {
+function V(e, t, n) {
   const o = /* @__PURE__ */ new Set(), i = e?.documents?.[I];
   for (const a of i ?? []) {
     const r = a;
@@ -422,7 +422,7 @@ function Ce({
   onOpen: n
 }) {
   const { t: o, edit: i, project: a, lang: r } = e, d = S(a), c = H(t), p = () => {
-    const l = _(), m = ue("item", K(a, t, -1));
+    const l = _(), m = ue("item", V(a, t, -1));
     i(
       (u) => {
         u.items.push({
@@ -443,7 +443,7 @@ function Ce({
       /* @__PURE__ */ s("span", { className: "bq-h", children: o("category") }),
       /* @__PURE__ */ s(F, { ctx: e, label: o("name"), node: t.name }),
       /* @__PURE__ */ s(
-        B,
+        K,
         {
           ctx: e,
           label: o("icon"),
@@ -531,7 +531,7 @@ function we({
 }) {
   const { t: i, edit: a, project: r } = e, d = t.items[n], c = (u) => a((f) => {
     u(f.items[n]);
-  }), p = K(r, t, n).has(d.id), l = w(d.price, S(r), t.discount, d.discount), m = Object.keys(d.rest);
+  }), p = V(r, t, n).has(d.id), l = w(d.price, S(r), t.discount, d.discount), m = Object.keys(d.rest);
   return /* @__PURE__ */ h(A, { children: [
     /* @__PURE__ */ h("section", { className: "bq-section", children: [
       /* @__PURE__ */ s("span", { className: "bq-h", children: i("item") }),
@@ -557,7 +557,7 @@ function we({
         }
       ),
       /* @__PURE__ */ s(
-        B,
+        K,
         {
           ctx: e,
           label: i("itemIcon"),
@@ -682,10 +682,10 @@ function He(e, t) {
 }
 const Te = {
   id: "boutique",
-  displayName: "Boutique",
+  displayName: "Store",
   schemaVersion: "boutique/v1",
   sdk: ie,
-  sidebar: { icon: () => null, label: "Boutique", to: "/m/boutique" },
+  sidebar: { icon: () => null, label: "Store", to: "/m/boutique" },
   // Categories are Documents of the folder; the settings are a screen the plugin declares.
   routes: [],
   documents: [Se],

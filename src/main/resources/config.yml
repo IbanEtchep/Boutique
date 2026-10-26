@@ -1,7 +1,7 @@
 # Base de données Azuriom de ce serveur.
 # La remise globale, les formats de prix et les messages sont dans
 # plugins/Artisan/modules/boutique_addon/data/shop_settings.yml, édités dans l'éditeur Artisan
-# (dossier boutique, Réglages).
+# (module Store, Réglages).
 database:
   host: host
   port: port
